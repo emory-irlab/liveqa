@@ -9,7 +9,7 @@ import scala.xml._
   * to generate the answer and some additional information expected by the TREC
   * LiveQA organizers.
   */
-class Answer(answer: String, sources: Array[String]) {
+class Answer(val answer: String, val sources: Array[String]) {
 
   /**
     * Encodes the answer in XML format.
