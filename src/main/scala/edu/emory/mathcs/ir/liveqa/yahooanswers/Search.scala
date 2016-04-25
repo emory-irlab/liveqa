@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import edu.emory.mathcs.ir.liveqa.{CandidateGeneration, Question}
 import edu.emory.mathcs.ir.liveqa.util.LogFormatter
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
@@ -62,8 +63,9 @@ object Search extends LazyLogging {
         if (response.status == http.Status.Ok)
           parse(response.getContentString())
             .map(qid => YahooAnswersQuestion(qid))
-            .map(futureQuestion => futureQuestion.filter(_.isDefined)
-              .map(questionOption => questionOption.get))
+            .map(futureQuestion =>
+              futureQuestion.filter(_.isDefined)
+                            .map(questionOption => questionOption.get))
         else
           Array.empty[Future[YahooAnswersQuestion]]
       )
@@ -71,7 +73,7 @@ object Search extends LazyLogging {
       case exc: Exception =>
         logger.error(LogFormatter("REQUEST_EXCEPTION",
           Array(searchUrl, exc.toString)))
-        Future(Seq.empty)
+        Future(Seq.empty[YahooAnswersQuestion])
     }
     results
   }

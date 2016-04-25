@@ -2,7 +2,7 @@ package edu.emory.mathcs.ir.liveqa
 
 import java.util.concurrent.TimeUnit
 
-import edu.emory.mathcs.ir.liveqa.yahooanswers.Search
+import edu.emory.mathcs.ir.liveqa.yahooanswers.{Search, YahooAnswerCandidateGenerator}
 import com.twitter.util.{Await, Duration}
 import com.typesafe.config.ConfigFactory
 
@@ -19,12 +19,11 @@ object QuestionAnswerer {
     * @return Answer to the given question.
     */
   def apply(question: Question): Answer = {
-    val yahooAnswersResults = Search(question.title,
-      cfg.getInt("qa.yahoo_answers_results"))
-    val res = Await.result(yahooAnswersResults,
+    val candidates = YahooAnswerCandidateGenerator.getCandidateAnswers(question)
+
+    val res = Await.result(candidates,
       Duration(cfg.getInt("qa.timeout"), TimeUnit.SECONDS))
 
-    val answers = res.map(qna => qna.qid).mkString(" -- ")
-    new Answer(answers, Array("Source"))
+    new Answer(res.head.text, Array("Source"))
   }
 }
