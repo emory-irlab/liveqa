@@ -20,7 +20,7 @@ object YahooAnswerCandidateGenerator extends CandidateGeneration {
         Search(_, cfg.getInt("qa.yahoo_answers_results"))
       } map {
         futureResults => futureResults map {
-          results => results.map(res =>
+          results => results.flatten.map(res =>
             // TODO(denxx): Add additional information to this instance.
             new AnswerCandidate(AnswerCandidate.YAHOO_ANSWERS,
               res.answers.head, res.qid))

@@ -24,6 +24,6 @@ object QuestionAnswerer {
     val res = Await.result(candidates,
       Duration(cfg.getInt("qa.timeout"), TimeUnit.SECONDS))
 
-    new Answer(res.head.text, Array("Source"))
+    new Answer(if (res.isEmpty) "NA" else res.head.text, Array("Source"))
   }
 }

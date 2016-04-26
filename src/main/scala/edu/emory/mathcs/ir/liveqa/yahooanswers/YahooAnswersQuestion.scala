@@ -3,7 +3,8 @@ package edu.emory.mathcs.ir.liveqa.yahooanswers
 import java.util.concurrent.TimeUnit
 
 import com.twitter.finagle.{Http, http}
-import com.twitter.util.{Duration, Future}
+import com.twitter.finagle.util.DefaultTimer
+import com.twitter.util.{Duration, Future, TimeoutException}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.util.LogFormatter
@@ -31,12 +32,11 @@ case class YahooAnswersQuestion(qid: String, categories: Array[String],
 object YahooAnswersQuestion extends LazyLogging {
   val yahooAnswerSearchBaseUrl = "answers.yahoo.com:443"
   val yahooAnswerSearchUrl = "https://answers.yahoo.com/question/index"
+  implicit val timer = DefaultTimer.twitter
   private val cfg = ConfigFactory.load()
   val client =
     Http.client
       .withTlsWithoutValidation
-      .withRequestTimeout(
-        Duration(cfg.getInt("request.timeout"), TimeUnit.SECONDS))
       .newService(yahooAnswerSearchBaseUrl)
 
   def apply(qid: String) : Future[Option[YahooAnswersQuestion]] = {
@@ -45,21 +45,24 @@ object YahooAnswersQuestion extends LazyLogging {
     val request = http.RequestBuilder.create()
       .url(requestUrl)
       .buildGet()
-    val resp = client(request)
 
-    // Process the response and handle any kind of communication errors.
-    resp.map { response =>
-      if (response.status == http.Status.Ok)
-        Some(parse(response.getContentString()))
-      else
-        None
-    } rescue {
-      case exc: Exception =>
-        logger.error(LogFormatter("REQUEST_EXCEPTION",
-          Array(requestUrl, exc.toString)))
-        // Return empty future.
-        Future(None)
-    }
+    // Request the page with the question from Yahoo! Answers and parse it.
+    val qna = client(request)
+      .within(Duration(cfg.getInt("request.timeout"), TimeUnit.SECONDS))
+      .map {
+        response => if (response.status == http.Status.Ok)
+          Some(parse(response.getContentString()))
+        else
+          None
+      } rescue {
+        case exc: com.twitter.util.TimeoutException =>
+          logger.error(LogFormatter("REQUEST_TIMEOUT",
+            Array(requestUrl, exc.toString)))
+          // Return empty future.
+          Future.value(None)
+      }
+
+    qna
   }
 
   private def parse(pageHtml: String): YahooAnswersQuestion = {
