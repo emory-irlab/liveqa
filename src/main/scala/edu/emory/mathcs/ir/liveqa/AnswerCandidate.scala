@@ -1,6 +1,8 @@
 package edu.emory.mathcs.ir.liveqa
 
-import edu.emory.mathcs.ir.liveqa.AnswerCandidate.AnswerType
+import edu.emory.mathcs.ir.liveqa.AnswerCandidate.{AnswerType, CandidateAttribute}
+
+
 
 /**
   * A candidate answer, extracted from somewhere on the web.
@@ -8,7 +10,7 @@ import edu.emory.mathcs.ir.liveqa.AnswerCandidate.AnswerType
 class AnswerCandidate(val answerType: AnswerType,
                       val text: String,
                       val source: String) {
-  val attributes = new scala.collection.mutable.HashMap[String, String]
+  val attributes = new scala.collection.mutable.HashMap[CandidateAttribute, String]
 
   override def toString = s"$text\n\n$source"
 }
@@ -17,4 +19,12 @@ object AnswerCandidate {
   sealed trait AnswerType
   case object YAHOO_ANSWERS extends AnswerType
   case object WEB extends AnswerType
+
+  sealed trait CandidateAttribute
+  case object QuestionTitle extends CandidateAttribute
+  case object QuestionBody extends CandidateAttribute
+  case object QuestionMainCategory extends CandidateAttribute
+  case object QuestionCategories extends CandidateAttribute
+  case object AnswerRank extends CandidateAttribute
+  case object Id extends CandidateAttribute
 }

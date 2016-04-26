@@ -2,13 +2,15 @@ package edu.emory.mathcs.ir.liveqa.yahooanswers
 
 import com.twitter.util.Future
 import com.typesafe.config.ConfigFactory
+import edu.emory.mathcs.ir.liveqa.AnswerCandidate.YAHOO_ANSWERS
 import edu.emory.mathcs.ir.liveqa.{AnswerCandidate, CandidateGeneration, Question}
 
 /**
-  * Created by dsavenk on 4/21/16.
+  * An object that generates candidates answers for the given question by
+  * retrieving related questions using Yahoo! Answers search functionality.
   */
 object YahooAnswerCandidateGenerator extends CandidateGeneration {
-  val cfg = ConfigFactory.load()
+  private val cfg = ConfigFactory.load()
 
   def getSearchQueries(question: Question) = {
     Seq(question.title)
@@ -20,13 +22,37 @@ object YahooAnswerCandidateGenerator extends CandidateGeneration {
         Search(_, cfg.getInt("qa.yahoo_answers_results"))
       } map {
         futureResults => futureResults map {
-          results => results.flatten.map(res =>
-            // TODO(denxx): Add additional information to this instance.
-            new AnswerCandidate(AnswerCandidate.YAHOO_ANSWERS,
-              res.answers.head, res.qid))
+          results => results.flatten.flatMap(createCandidates(_))
         }
       }
     } map { futureResults => futureResults.flatten }
     results
+  }
+
+  private def createCandidates(questionAnswers: YahooAnswersQuestion)
+      :Seq[AnswerCandidate] = {
+    questionAnswers.answers
+      .zipWithIndex
+      .map {
+        case (answer: String, rank: Int) =>
+          val candidate = new AnswerCandidate(
+            YAHOO_ANSWERS, answer, questionAnswers.url)
+
+          // Add question attributes, so we could use them later.
+          candidate.attributes(AnswerCandidate.AnswerRank) = rank.toString
+          candidate.attributes(AnswerCandidate.QuestionTitle) =
+            questionAnswers.title
+          candidate.attributes(AnswerCandidate.QuestionBody) =
+            questionAnswers.body
+          candidate.attributes(AnswerCandidate.QuestionMainCategory) =
+            questionAnswers.categories.headOption.getOrElse("")
+          candidate.attributes(AnswerCandidate.QuestionCategories) =
+            questionAnswers.categories.mkString("\t")
+          candidate.attributes(AnswerCandidate.QuestionCategories) =
+            questionAnswers.qid
+
+          // Return the answer.
+          candidate
+      }
   }
 }
