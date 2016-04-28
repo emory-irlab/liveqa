@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.{CandidateGeneration, Question}
-import edu.emory.mathcs.ir.liveqa.util.LogFormatter
+import edu.emory.mathcs.ir.liveqa.util.{HtmlScraper, LogFormatter}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
@@ -25,10 +25,6 @@ object Search extends LazyLogging {
   val yahooAnswerSearchUrl = "https://answers.yahoo.com/search/search_result"
   private val cfg = ConfigFactory.load()
   implicit val timer = DefaultTimer.twitter
-  val client =
-    Http.client
-      .withTlsWithoutValidation
-      .newService(yahooAnswerSearchBaseUrl)
 
   /**
     * Returns the requested number of search results from Yahoo! Answers search.
@@ -58,19 +54,15 @@ object Search extends LazyLogging {
       Future[Seq[Option[YahooAnswersQuestion]]] = {
     val searchUrl = http.Request.queryString(yahooAnswerSearchUrl,
       Map("p" -> URLEncoder.encode(query, "UTF-8"), "s" -> page.toString))
-    val request = http.RequestBuilder.create()
-      .url(searchUrl)
-      .buildGet()
 
     // Make a request with 1 second time limit.
-    val answers = client(request)
+    val answers = HtmlScraper(searchUrl)
       .within(Duration(cfg.getInt("request.timeout"), TimeUnit.SECONDS))
       .flatMap {
-        response =>
+        content =>
           Future.collect(
-            if (response.status == http.Status.Ok)
-              parse(response.getContentString())
-                .map(qid => YahooAnswersQuestion(qid))
+            if (content.isDefined)
+              parse(content.get).map(YahooAnswersQuestion(_))
             else
               Array.empty[Future[Option[YahooAnswersQuestion]]])
       } rescue {

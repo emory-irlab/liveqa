@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit
 import edu.emory.mathcs.ir.liveqa.yahooanswers.{Search, YahooAnswerCandidateGenerator}
 import com.twitter.util.{Await, Duration}
 import com.typesafe.config.ConfigFactory
+import edu.emory.mathcs.ir.liveqa.web.WebSearchCandidateGenerator
 
 /**
   * The main question answering object, that maps a question into the answer.
@@ -12,6 +13,10 @@ import com.typesafe.config.ConfigFactory
 object QuestionAnswerer {
   // Application config
   private val cfg = ConfigFactory.load()
+  private val candidateGenerator =
+    new MergingCandidateGenerator(
+      new YahooAnswerCandidateGenerator,
+      new WebSearchCandidateGenerator)
 
   /**
     * Returns the answer for the given question.
@@ -19,8 +24,7 @@ object QuestionAnswerer {
     * @return Answer to the given question.
     */
   def apply(question: Question): Answer = {
-    val candidates = YahooAnswerCandidateGenerator.getCandidateAnswers(question)
-
+    val candidates = candidateGenerator.getCandidateAnswers(question)
     val res = Await.result(candidates,
       Duration(cfg.getInt("qa.timeout"), TimeUnit.SECONDS))
 

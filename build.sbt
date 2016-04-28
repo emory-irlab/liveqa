@@ -12,5 +12,7 @@ libraryDependencies ++= Seq(
   "com.typesafe" % "config" % "1.3.0",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
   "io.circe" %% "circe-generic" % "0.3.0",
+  "net.databinder.dispatch" %% "dispatch-core" % "0.11.3",
+  "net.ettinsmoor" %% "bingerator" % "0.2.4",
   "net.ruippeixotog" %% "scala-scraper" % "1.0.0"
 )

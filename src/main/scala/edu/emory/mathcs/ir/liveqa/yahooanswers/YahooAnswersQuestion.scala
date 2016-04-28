@@ -2,12 +2,12 @@ package edu.emory.mathcs.ir.liveqa.yahooanswers
 
 import java.util.concurrent.TimeUnit
 
-import com.twitter.finagle.{Http, http}
+import com.twitter.finagle.http
 import com.twitter.finagle.util.DefaultTimer
 import com.twitter.util.{Duration, Future}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import edu.emory.mathcs.ir.liveqa.util.LogFormatter
+import edu.emory.mathcs.ir.liveqa.util.{HtmlScraper, LogFormatter}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
@@ -39,11 +39,7 @@ object YahooAnswersQuestion extends LazyLogging {
   val YahooAnswerSearchUrl = "https://answers.yahoo.com/question/index"
 
   implicit val timer = DefaultTimer.twitter
-
   private val cfg = ConfigFactory.load()
-  val client = Http.client
-    .withTlsWithoutValidation
-    .newService(YahooAnswerSearchBaseUrl)
 
   /**
     * Scrapes the data for the Yahoo! Answers question with the provided qid.
@@ -54,19 +50,12 @@ object YahooAnswersQuestion extends LazyLogging {
     */
   def apply(qid: String) : Future[Option[YahooAnswersQuestion]] = {
     val requestUrl = url(qid)
-    val request = http.RequestBuilder.create()
-      .url(requestUrl)
-      .buildGet()
 
     // Request the page with the question from Yahoo! Answers and parse it.
-    val qna = client(request)
+    val qna = HtmlScraper(requestUrl) //client(request)
       .within(Duration(cfg.getInt("request.timeout"), TimeUnit.SECONDS))
-      .map {
-        response => if (response.status == http.Status.Ok)
-          Some(parse(response.getContentString()))
-        else
-          None
-      } rescue {
+      .map(contentOption => contentOption.map(parse(_)))
+      .rescue {
         case exc: com.twitter.util.TimeoutException =>
           logger.error(LogFormatter("REQUEST_TIMEOUT",
             Array(requestUrl, exc.toString)))

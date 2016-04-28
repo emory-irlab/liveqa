@@ -4,6 +4,7 @@ import com.twitter.finagle.Http
 import com.twitter.util.Await
 import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.util.LogFormatter
+import edu.emory.mathcs.ir.liveqa.web.WebDocument
 import io.finch._
 
 /**
@@ -14,7 +15,6 @@ object MainApi extends App with LazyLogging {
   val liveQaApi: Endpoint[Answer] = get(param("qid") :: param("category") ::
                                         param("title") :: param("body") ) {
     (qid:String, category:String, title:String, body:String) =>
-
       // Log the question.
       logger.info(LogFormatter("QUESTION", Array(qid, title, body)))
 
