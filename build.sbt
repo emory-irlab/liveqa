@@ -14,5 +14,6 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-generic" % "0.3.0",
   "net.databinder.dispatch" %% "dispatch-core" % "0.11.3",
   "net.ettinsmoor" %% "bingerator" % "0.2.4",
-  "net.ruippeixotog" %% "scala-scraper" % "1.0.0"
+  "net.ruippeixotog" %% "scala-scraper" % "1.0.0",
+  "org.apache.tika" % "tika-parsers" % "1.12"
 )
