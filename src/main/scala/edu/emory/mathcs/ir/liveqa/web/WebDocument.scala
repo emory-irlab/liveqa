@@ -13,8 +13,6 @@ import edu.emory.mathcs.ir.liveqa.util.{HtmlScraper, LogFormatter}
   * Represents a web document.
   */
 class WebDocument(val url: String, val title: String, val description: String) {
-
-  println(url)
   /**
     * The content of the document.
     */
