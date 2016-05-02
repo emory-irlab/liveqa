@@ -1,6 +1,7 @@
 package edu.emory.mathcs.ir.liveqa
 
 import edu.emory.mathcs.ir.liveqa.AnswerCandidate.{AnswerType, CandidateAttribute}
+import edu.stanford.nlp.simple.Document
 
 
 
@@ -11,6 +12,7 @@ class AnswerCandidate(val answerType: AnswerType,
                       val text: String,
                       val source: String) {
   val attributes = new scala.collection.mutable.HashMap[CandidateAttribute, String]
+  val textNlp = new Document(text)
 
   override def toString = s"$text\n\n$source"
 }

@@ -14,6 +14,8 @@ libraryDependencies ++= Seq(
   "com.twitter" %% "twitter-server" % "1.20.0",
   "com.typesafe" % "config" % "1.3.0",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",
+  "edu.stanford.nlp" % "stanford-corenlp" % "3.6.0",
+  "edu.stanford.nlp" % "stanford-corenlp" % "3.6.0" classifier "models",
   "io.circe" %% "circe-generic" % "0.3.0",
   "net.databinder.dispatch" %% "dispatch-core" % "0.11.3",
   "net.ettinsmoor" %% "bingerator" % "0.2.4",

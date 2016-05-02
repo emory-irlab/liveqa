@@ -19,11 +19,12 @@ object MainApi extends TwitterServer with LazyLogging {
   val port = cfg.getString("port")
   val answerLatency: Stat = statsReceiver.stat("answer_latency")
 
-  private val liveQaParams = param("qid") :: param("category") :: param("title") :: param("body")
-  val liveQaGetApi: Endpoint[Answer] = get(liveQaParams)(respond(_,_,_,_))
-  val liveQaPostApi: Endpoint[Answer] = post(liveQaParams)(respond(_,_,_,_))
+  private val liveQaParams = param("qid") :: param("category") ::
+    param("title") :: param("body")
+  val getApi: Endpoint[Answer] = get(liveQaParams)(respond(_,_,_,_))
+  val postApi: Endpoint[Answer] = post(liveQaParams)(respond(_,_,_,_))
 
-  val api: Service[Request, Response] = (liveQaGetApi :+: liveQaPostApi).toService
+  val api: Service[Request, Response] = (getApi :+: postApi).toService
 
   def main(): Unit = {
     val server = Http.server
@@ -34,7 +35,6 @@ object MainApi extends TwitterServer with LazyLogging {
 
     Await.ready(adminHttpServer)
   }
-
 
   def respond(qid:String, category:String, title:String, body:String) = {
     FuturePool.unboundedPool {
