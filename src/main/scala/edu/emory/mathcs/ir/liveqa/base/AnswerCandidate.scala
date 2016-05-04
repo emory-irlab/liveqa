@@ -29,4 +29,5 @@ object AnswerCandidate {
   case object QuestionCategories extends CandidateAttribute
   case object AnswerRank extends CandidateAttribute
   case object Id extends CandidateAttribute
+  case object Relevance extends CandidateAttribute
 }
