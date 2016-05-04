@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import edu.emory.mathcs.ir.liveqa.{CandidateGeneration, Question}
+import edu.emory.mathcs.ir.liveqa.base.Question
 import edu.emory.mathcs.ir.liveqa.util.{HtmlScraper, LogFormatter}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._

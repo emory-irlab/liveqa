@@ -2,8 +2,8 @@ package edu.emory.mathcs.ir.liveqa.yahooanswers
 
 import com.twitter.util.Future
 import com.typesafe.config.ConfigFactory
-import edu.emory.mathcs.ir.liveqa.AnswerCandidate.YAHOO_ANSWERS
-import edu.emory.mathcs.ir.liveqa.{AnswerCandidate, CandidateGeneration, QueryGeneration, Question}
+import edu.emory.mathcs.ir.liveqa.base.{Question, QueryGeneration, CandidateGeneration, AnswerCandidate}
+import AnswerCandidate.YAHOO_ANSWERS
 
 /**
   * An object that generates candidates answers for the given question by

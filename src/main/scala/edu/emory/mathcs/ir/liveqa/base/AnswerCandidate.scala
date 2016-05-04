@@ -1,6 +1,6 @@
-package edu.emory.mathcs.ir.liveqa
+package edu.emory.mathcs.ir.liveqa.base
 
-import edu.emory.mathcs.ir.liveqa.AnswerCandidate.{AnswerType, CandidateAttribute}
+import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.{CandidateAttribute, AnswerType}
 import edu.stanford.nlp.simple.Document
 
 

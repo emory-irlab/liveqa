@@ -1,8 +1,6 @@
-package edu.emory.mathcs.ir.liveqa
+package edu.emory.mathcs.ir.liveqa.base
 
 import io.finch.EncodeResponse
-
-import scala.xml._
 
 /**
   * Answer response, which contains the actual text of the answer, sources used

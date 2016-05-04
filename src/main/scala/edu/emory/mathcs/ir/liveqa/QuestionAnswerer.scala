@@ -2,6 +2,7 @@ package edu.emory.mathcs.ir.liveqa
 
 import java.util.concurrent.TimeUnit
 
+import edu.emory.mathcs.ir.liveqa.base.{Question, MergingCandidateGenerator, Answer}
 import edu.emory.mathcs.ir.liveqa.yahooanswers.{Search, YahooAnswerCandidateGenerator}
 import com.twitter.util.{Await, Duration}
 import com.typesafe.config.ConfigFactory

@@ -1,7 +1,7 @@
 package edu.emory.mathcs.ir.liveqa.web
 
 import com.twitter.util.Future
-import edu.emory.mathcs.ir.liveqa.{AnswerCandidate, CandidateGeneration, QueryGeneration, Question}
+import edu.emory.mathcs.ir.liveqa.base.{Question, QueryGeneration, CandidateGeneration, AnswerCandidate}
 
 /**
   * Generates candidate answers using web search to retrieve a set of relevant

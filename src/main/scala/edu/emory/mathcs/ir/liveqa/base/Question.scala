@@ -1,4 +1,4 @@
-package edu.emory.mathcs.ir.liveqa
+package edu.emory.mathcs.ir.liveqa.base
 
 import edu.stanford.nlp.simple.Document
 

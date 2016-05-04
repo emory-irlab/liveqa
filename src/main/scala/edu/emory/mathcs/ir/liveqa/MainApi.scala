@@ -8,6 +8,7 @@ import com.twitter.server.TwitterServer
 import com.twitter.util.{Await, FuturePool}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import edu.emory.mathcs.ir.liveqa.base.{Question, Answer}
 import edu.emory.mathcs.ir.liveqa.util.LogFormatter
 import io.finch._
 

@@ -1,6 +1,6 @@
 package edu.emory.mathcs.ir.liveqa.scoring
 
-import edu.emory.mathcs.ir.liveqa.{AnswerCandidate, Question}
+import edu.emory.mathcs.ir.liveqa.base.{Question, AnswerCandidate}
 
 /**
   * Inteface for computing answer candidate features.

@@ -1,4 +1,4 @@
-package edu.emory.mathcs.ir.liveqa
+package edu.emory.mathcs.ir.liveqa.base
 
 /**
   * Created by dsavenk on 4/26/16.
