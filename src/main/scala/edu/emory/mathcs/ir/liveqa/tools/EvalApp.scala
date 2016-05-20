@@ -1,4 +1,4 @@
-package edu.emory.mathcs.ir.liveqa.utils
+package edu.emory.mathcs.ir.liveqa.tools
 
 import edu.emory.mathcs.ir.liveqa.parsing.QrelParser
 import edu.emory.mathcs.ir.liveqa.ranking._
