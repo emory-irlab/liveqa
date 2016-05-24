@@ -1,4 +1,4 @@
-package edu.emory.mathcs.ir.liveqa.yahooanswers
+package edu.emory.mathcs.ir.liveqa.verticals.answerscom
 
 import com.twitter.finagle.{Http, http}
 import com.twitter.finagle.util.DefaultTimer
@@ -16,13 +16,13 @@ import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.model.Element
 
 /**
-  * Searches Yahoo! Answers for related questions using its own search
+  * Searches Answers.com for related questions using its own search
   * interface.
   */
 object Search extends LazyLogging {
   val resultsPageDocCount = 10
-  val yahooAnswerSearchBaseUrl = "answers.yahoo.com:443"
-  val yahooAnswerSearchUrl = "https://answers.yahoo.com/search/search_result"
+  val yahooAnswerSearchBaseUrl = "www,answers.com:80"
+  val yahooAnswerSearchUrl = "http://www.answers.com/Q/"
   private val cfg = ConfigFactory.load()
   implicit val timer = DefaultTimer.twitter
 
@@ -33,7 +33,7 @@ object Search extends LazyLogging {
     * @return A Future of search results list.
     */
   def apply(query: String, topN: Int)
-      : Future[Seq[Option[YahooAnswersQuestion]]] = {
+  : Future[Seq[Option[AnswersComQuestion]]] = {
     Future.collect(
       (1 to (topN + resultsPageDocCount - 1) / resultsPageDocCount)
         .map(page => getSearchPage(query, page))
@@ -51,7 +51,7 @@ object Search extends LazyLogging {
     * @return A Future of search results from the given page.
     */
   private def getSearchPage(query: String, page: Int):
-      Future[Seq[Option[YahooAnswersQuestion]]] = {
+  Future[Seq[Option[AnswersComQuestion]]] = {
     val searchUrl = http.Request.queryString(yahooAnswerSearchUrl,
       Map("p" -> URLEncoder.encode(query, "UTF-8"), "s" -> page.toString))
 
@@ -62,16 +62,16 @@ object Search extends LazyLogging {
         content =>
           Future.collect(
             if (content.isDefined)
-              parse(content.get).map(YahooAnswersQuestion(_))
+              parse(content.get).map(AnswersComQuestion(_))
             else
-              Array.empty[Future[Option[YahooAnswersQuestion]]])
+              Array.empty[Future[Option[AnswersComQuestion]]])
       } rescue {
-        case exc: TimeoutException =>
-          logger.error(LogFormatter("SEARCH_REQUEST_EXCEPTION",
-            Array(searchUrl, exc.toString)))
-          // Return empty future.
-          Future.value(Nil)
-      }
+      case exc: TimeoutException =>
+        logger.error(LogFormatter("SEARCH_REQUEST_EXCEPTION",
+          Array(searchUrl, exc.toString)))
+        // Return empty future.
+        Future.value(Nil)
+    }
 
     answers
   }

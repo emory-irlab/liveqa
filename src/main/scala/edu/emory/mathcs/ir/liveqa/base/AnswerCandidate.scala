@@ -20,7 +20,9 @@ class AnswerCandidate(val answerType: AnswerType,
 object AnswerCandidate {
   sealed trait AnswerType
   case object YAHOO_ANSWERS extends AnswerType
+  case object ANSWERS_COM extends AnswerType
   case object WEB extends AnswerType
+  case object CROWD extends AnswerType
 
   sealed trait CandidateAttribute
   case object QuestionTitle extends CandidateAttribute

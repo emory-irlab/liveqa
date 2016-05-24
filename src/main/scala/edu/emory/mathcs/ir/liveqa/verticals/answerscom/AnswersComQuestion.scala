@@ -1,4 +1,4 @@
-package edu.emory.mathcs.ir.liveqa.yahooanswers
+package edu.emory.mathcs.ir.liveqa.verticals.answerscom
 
 import java.util.concurrent.TimeUnit
 
@@ -21,20 +21,20 @@ import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
   * @param body The body of the question
   * @param answers The list of answers
   */
-case class YahooAnswersQuestion(qid: String, categories: Array[String],
-                                title: String, body: String,
-                                answers: Array[String]) {
+case class AnswersComQuestion(qid: String, categories: Array[String],
+                              title: String, body: String,
+                              answers: Array[String]) {
   /**
     * @return Returns url of the current YahooAnswersQuestions.
     */
-  def url: String = YahooAnswersQuestion.url(qid)
+  def url: String = AnswersComQuestion.url(qid)
 }
 
 /**
   * Companion object for YahooAnswersQuestion class, it has a factory method to
   * get the question data from Yahoo! Answers given its qid.
   */
-object YahooAnswersQuestion extends LazyLogging {
+object AnswersComQuestion extends LazyLogging {
   val YahooAnswerSearchBaseUrl = "answers.yahoo.com:443"
   val YahooAnswerSearchUrl = "https://answers.yahoo.com/question/index"
 
@@ -43,12 +43,12 @@ object YahooAnswersQuestion extends LazyLogging {
 
   /**
     * Scrapes the data for the Yahoo! Answers question with the provided qid.
- *
+    *
     * @param qid QID of the question to scrape from Yahoo! Answers.
-    * @return A future, that might contain [[YahooAnswersQuestion]] object with
+    * @return A future, that might contain [[AnswersComQuestion]] object with
     *         the data for the provided Qid. If request fails it will be None.
     */
-  def apply(qid: String) : Future[Option[YahooAnswersQuestion]] = {
+  def apply(qid: String) : Future[Option[AnswersComQuestion]] = {
     val requestUrl = url(qid)
 
     // Request the page with the question from Yahoo! Answers and parse it.
@@ -68,7 +68,7 @@ object YahooAnswersQuestion extends LazyLogging {
 
   /**
     * Returns a url of the question with the given QID.
- *
+    *
     * @param qid Unique question identifier on Yahoo! Answers.
     * @return Url of the question on Yahoo! Answers.
     */
@@ -79,12 +79,12 @@ object YahooAnswersQuestion extends LazyLogging {
 
   /**
     * Parses the HTML code of the Yahoo! Answers question web page and returns
-    * [[YahooAnswersQuestion]] object with the corresponding data.
- *
+    * [[AnswersComQuestion]] object with the corresponding data.
+    *
     * @param pageHtml Html code of the question page.
-    * @return [[YahooAnswersQuestion]] instance for the given question.
+    * @return [[AnswersComQuestion]] instance for the given question.
     */
-  private def parse(pageHtml: String): YahooAnswersQuestion = {
+  private def parse(pageHtml: String): AnswersComQuestion = {
     val browser = JsoupBrowser()
     val document = browser.parseString(pageHtml)
     val qid = document >> attr("data-ya-question-id")("#ya-question-detail")
@@ -102,7 +102,7 @@ object YahooAnswersQuestion extends LazyLogging {
     val answers = document >> texts(".ya-q-full-text")
 
     // TODO(denxx): Extract additional answer metainformation, e.g. votes.
-    new YahooAnswersQuestion(qid, categories.toArray, title, body,
+    new AnswersComQuestion(qid, categories.toArray, title, body,
       answers.toArray)
   }
 }

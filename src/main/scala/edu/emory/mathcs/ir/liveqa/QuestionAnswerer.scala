@@ -3,9 +3,10 @@ package edu.emory.mathcs.ir.liveqa
 import java.util.concurrent.TimeUnit
 
 import edu.emory.mathcs.ir.liveqa.base._
-import edu.emory.mathcs.ir.liveqa.yahooanswers.{Search, YahooAnswerCandidateGenerator}
+import edu.emory.mathcs.ir.liveqa.verticals.yahooanswers.{Search, YahooAnswerCandidateGenerator}
 import com.twitter.util.{Await, Duration}
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.web.WebSearchCandidateGenerator
 
 /**
@@ -22,9 +23,8 @@ trait QuestionAnswering {
 
 /**
   * Ranking-based question answering. There are 3 main stages, first a set of
-  * candidate answers is generated ([[RankingBasedQuestionAnswering.generateCandidates]]),
-  * then they are ranked ([[RankingBasedQuestionAnswering.rankCandidates]]), and
-  * finally the response is generated ([[RankingBasedQuestionAnswering.generateAnswer]]).
+  * candidate answers is generated, then they are ranked, and finally
+  * the response is generated.a
   */
 trait RankingBasedQuestionAnswering extends QuestionAnswering {
 
@@ -71,7 +71,7 @@ trait RankingBasedQuestionAnswering extends QuestionAnswering {
   * The main question answering object, that maps a question into the answer.
   */
 class TextQuestionAnswerer(candidateGenerator: CandidateGeneration)
-  extends RankingBasedQuestionAnswering {
+  extends RankingBasedQuestionAnswering with LazyLogging {
 
   // Application config
   private val cfg = ConfigFactory.load()
@@ -84,6 +84,9 @@ class TextQuestionAnswerer(candidateGenerator: CandidateGeneration)
     */
   override def generateCandidates(question: Question): Seq[AnswerCandidate] = {
     val candidates = candidateGenerator.getCandidateAnswers(question)
+    candidates.onFailure {
+      case exc: Exception => logger.error(exc.getMessage)
+    }
     Await.result(candidates, Duration(cfg.getInt("qa.timeout"), TimeUnit.SECONDS))
   }
 

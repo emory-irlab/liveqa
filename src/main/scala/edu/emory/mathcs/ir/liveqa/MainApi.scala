@@ -13,10 +13,10 @@ import com.twitter.util.{Await, FuturePool}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.base.{Answer, MergingCandidateGenerator, Question}
-import edu.emory.mathcs.ir.liveqa.crowd.CrowdDb
+import edu.emory.mathcs.ir.liveqa.crowd.{CrowdDb, CrowdQuestionAnswerer}
 import edu.emory.mathcs.ir.liveqa.util.LogFormatter
 import edu.emory.mathcs.ir.liveqa.web.WebSearchCandidateGenerator
-import edu.emory.mathcs.ir.liveqa.yahooanswers.YahooAnswerCandidateGenerator
+import edu.emory.mathcs.ir.liveqa.verticals.yahooanswers.YahooAnswerCandidateGenerator
 import io.finch._
 import org.joda.time.DateTime
 
@@ -33,7 +33,7 @@ object MainApi extends TwitterServer with LazyLogging {
   val getEndpoint: Endpoint[Answer] = get(liveQaParams)(respond(_,_,_,_))
   val postEndpoint: Endpoint[Answer] = post(liveQaParams)(respond(_,_,_,_))
   val currentQuestionEndpoint: Endpoint[Question] = get("question")(getCurrentQuestion)
-  val workerAnswerEndpoint: Endpoint[Unit] = get("worker_answer" :: param("qid") :: param("answer"))(addWorkerAnswer(_,_))
+  val workerAnswerEndpoint: Endpoint[Unit] = get("worker_answer" :: param("qid") :: param("answer") :: param("worker"))(addWorkerAnswer(_,_,_))
   val getAnswersEndpoint: Endpoint[Seq[Answer]] = get("get_answers" :: param("qid") :: param("worker"))(getAnswersToRate(_,_))
   val rateAnswerEndpoint: Endpoint[Unit] = get("rate_answer" :: param("aid") :: param("worker") :: param("rating"))(rateAnswer(_,_,_))
 
@@ -44,18 +44,25 @@ object MainApi extends TwitterServer with LazyLogging {
     (getEndpoint :+: postEndpoint :+: currentQuestionEndpoint :+: workerAnswerEndpoint :+: getAnswersEndpoint :+: rateAnswerEndpoint).toService
 
   // Question answering module.
-  val questionAnswerer = new TextQuestionAnswerer(
-    new MergingCandidateGenerator(
-      new YahooAnswerCandidateGenerator,
-      new WebSearchCandidateGenerator)
-  )
+  val questionAnswerer =
+    if (cfg.getBoolean("qa.crowd.enabled"))
+      new CrowdQuestionAnswerer(
+        new MergingCandidateGenerator(
+          new YahooAnswerCandidateGenerator //,new WebSearchCandidateGenerator)
+    ))
+    else
+      new TextQuestionAnswerer(
+        new MergingCandidateGenerator(
+          new YahooAnswerCandidateGenerator,
+          new WebSearchCandidateGenerator)
+      )
 
   def main(): Unit = {
     val server = Http.server
       .configured(Stats(statsReceiver))
-      .withTls(Netty3ListenerTLSConfig(() =>
-        Ssl.server(cfg.getString("ssl.certificate"), cfg.getString("ssl.key"),
-          null, null, null)))
+//      .withTls(Netty3ListenerTLSConfig(() =>
+//        Ssl.server(cfg.getString("ssl.certificate"), cfg.getString("ssl.key"),
+//          null, null, null)))
       .serve(port, api)
 
     onExit { server.close() }
@@ -96,8 +103,8 @@ object MainApi extends TwitterServer with LazyLogging {
     * @param answer The answer submitted by a mechanical turk worker.
     * @return Ok
     */
-  def addWorkerAnswer(qid:String, answer:String) = {
-    CrowdDb.addAnswer(qid, answer, "Mechanical Turk")
+  def addWorkerAnswer(qid:String, answer:String, worker:String) = {
+    CrowdDb.addAnswer(qid, answer, "Mechanical Turk", worker)
     Ok()
   }
 

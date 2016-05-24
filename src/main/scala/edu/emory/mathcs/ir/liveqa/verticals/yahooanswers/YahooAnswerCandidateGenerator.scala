@@ -1,4 +1,4 @@
-package edu.emory.mathcs.ir.liveqa.yahooanswers
+package edu.emory.mathcs.ir.liveqa.verticals.yahooanswers
 
 import com.twitter.util.Future
 import com.typesafe.config.ConfigFactory
@@ -19,7 +19,7 @@ class YahooAnswerCandidateGenerator
     * @return A sequence of search queries to issue to a search engine.
     */
   override def getSearchQueries(question: Question) = {
-    Seq(question.title)
+    Seq(question.title.replaceAll("[^A-Za-z0-9]", " "))
   }
 
   override def getCandidateAnswers(question: Question)
