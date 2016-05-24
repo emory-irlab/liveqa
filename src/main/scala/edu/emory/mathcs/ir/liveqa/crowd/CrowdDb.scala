@@ -1,7 +1,7 @@
 package edu.emory.mathcs.ir.liveqa.crowd
 
 import com.typesafe.scalalogging.LazyLogging
-import edu.emory.mathcs.ir.liveqa.base.Question
+import edu.emory.mathcs.ir.liveqa.base.{Answer, Question}
 import java.sql.Timestamp
 
 import com.typesafe.config.ConfigFactory
@@ -33,16 +33,15 @@ object CrowdDb extends LazyLogging {
   /**
     * Class defining the structure of the questions table.
     */
-  class Questions(tag: Tag) extends Table[(Int, String, String, String, String, DateTime, Boolean)](tag, "QUESTIONS") {
-    def id = column[Int]("ID", O.PrimaryKey, O.AutoInc)
-    def qid = column[String]("QID")
+  class Questions(tag: Tag) extends Table[(String, String, String, String, DateTime, Boolean)](tag, "QUESTIONS") {
+    def qid = column[String]("QID", O.PrimaryKey)
     def category = column[String]("CATEGORY")
     def title = column[String]("TITLE")
     def body = column[String]("BODY")
     def received = column[DateTime]("RECEIVED")
     def answered = column[Boolean]("ANSWERED")
 
-    def * = (id, qid, category, title, body, received, answered)
+    def * = (qid, category, title, body, received, answered)
   }
   // Slick table query for the questions table.
   val questions = TableQuery[Questions]
@@ -50,17 +49,17 @@ object CrowdDb extends LazyLogging {
   /**
     * Class defining the structure of the answers table.
     */
-  class Answers(tag: Tag) extends Table[(Int, Int, String, String, DateTime)](tag, "ANSWERS") {
+  class Answers(tag: Tag) extends Table[(Int, String, String, String, DateTime)](tag, "ANSWERS") {
     def id = column[Int]("ID", O.PrimaryKey, O.AutoInc)
-    def qid = column[Int]("QID")
+    def qid = column[String]("QID")
     def answer = column[String]("ANSWER")
     def source = column[String]("SOURCE")
     def created = column[DateTime]("CREATED")
+    def rank = column[Int]("RANK")
 
     def * = (id, qid, answer, source, created)
     // Foreign key to link answers to the questions.
-    def questionId = foreignKey("QUESTION_FK", qid, questions)(_.id)
-    def qidIndex = index("idx_qid", qid)
+    def questionId = foreignKey("QUESTION_FK", qid, questions)(_.qid)
   }
   val answers = TableQuery[Answers]
 
@@ -99,8 +98,8 @@ object CrowdDb extends LazyLogging {
     * @return A Future with the database query status.
     */
   def postQuestion(question: Question): Future[_] = {
-      db.run(questions += (0, question.qid, question.category, question.title,
-        question.body.getOrElse(""), DateTime.now(), false))
+      db.run(questions += (question.qid, question.category, question.title,
+        question.body.getOrElse(""), question.submittedTime, false))
   }
 
   def getQuestions(from: DateTime, to:DateTime): Seq[Question] = {
@@ -108,8 +107,8 @@ object CrowdDb extends LazyLogging {
       questions.filter(q => q.received >= from && q.received <= to && !q.answered)
         .sortBy(q => q.received)
         .result).map(_.map {
-          case (id, qid, category, title, body, time, answered) =>
-            new Question(qid, category, title, Some(body))
+          case (qid, category, title, body, time, answered) =>
+            new Question(qid, category, title, Some(body), time)
         })
     Await.result(questionFuture, Duration.Inf)
   }
@@ -140,12 +139,52 @@ object CrowdDb extends LazyLogging {
       .update(true))
   }
 
+
+  /**
+    * Adds the answer to the question with the given qid to the database.
+    *
+    * @param qid Qid of the question to answer.
+    * @param answer The answer to add.
+    */
+  def addAnswer(qid: String, answer: String, source: String) = {
+    db.run(answers += (0, qid, answer, source, DateTime.now))
+  }
+
+  /**
+    * Returns the answers to the given question, that haven't been rated yet
+    * by the current worker.
+    *
+    * @param qid Qid of the current question.
+    * @param worker The id of the worker.
+    * @return A list of answers, not rated by the current worker.
+    */
+  def getAnswers(qid: String, worker: String): Seq[Answer] = {
+    val answerRatingsQuery = answers.filter(_.qid === qid)
+      .joinLeft(ratings.filter(_.worker === worker)) on (_.id === _.aid)
+
+    val answerRatings = Await.result(
+      db.run(answerRatingsQuery.result), Duration.Inf)
+    answerRatings.filterNot(_._2.isDefined)
+      .map(a => new Answer(a._1._1, a._1._3, Array(a._1._4)))
+  }
+
+  /**
+    * Save the rating for the given answer.
+    * @param aid Id of the answer to rate.
+    * @param worker Id of the worker, who rated the answer.
+    * @param rating The rating of the answer.
+    */
+  def rateAnswer(aid: Int, worker: String, rating: Int): Unit = {
+    db.run(ratings += (0, aid, rating, worker))
+  }
+
   /**
     * Main method to test DB.
     */
-  def main() {
-    //CrowdDb.createDb()
+  def main(args: Array[String]): Unit = {
+    CrowdDb.createDb()
     //    CrowdDb.getCurrentQuestion.foreach(q => println(q.title))
-    //    CrowdDb.setAnswered(new Question("QID", "", "", Some("")))
+    db.run(questions += ("1", "Health & Diet", "Who is John Galt", "I've heard this phrase a lot, but don't know what it means", DateTime.now(), false))
+    db.close()
   }
 }

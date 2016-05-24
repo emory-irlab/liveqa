@@ -2,12 +2,11 @@ package edu.emory.mathcs.ir.liveqa.crowd
 
 import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.mturk.util.PropertiesClientConfig
-import com.typesafe.scalalogging.LazyLogging
 
 /**
   * Created by dsavenk on 5/20/16.
   */
-object MturkTask extends App with LazyLogging {
+object MturkTask {
   val service = new RequesterService(
     new PropertiesClientConfig("src/main/resources/mturk.properties"))
   def balance = service.getAccountBalance
@@ -18,5 +17,10 @@ object MturkTask extends App with LazyLogging {
       <FrameHeight>600</FrameHeight>
     </ExternalQuestion>
 
-  service.createHIT("Answer questions in real time", "You will need to sit and wait for questions", 0.01, externalQuestion.toString, 1)
+  def main(args: Array[String]): Unit = {
+    // TODO(denxx): This should come from the configuration file.
+    service.createHIT("Answer questions in real time",
+      "You will need to sit and wait for questions",
+      0.01, externalQuestion.toString, 1)
+  }
 }

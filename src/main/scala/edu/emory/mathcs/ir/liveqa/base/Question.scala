@@ -1,8 +1,9 @@
 package edu.emory.mathcs.ir.liveqa.base
 
 import edu.stanford.nlp.simple.Document
-import io.circe.{Encoder, Json}
+import io.circe.Json
 import io.finch.EncodeResponse
+import org.joda.time.DateTime
 
 /**
   * A question from Yahoo! Answers submitted to the system.
@@ -10,7 +11,8 @@ import io.finch.EncodeResponse
 case class Question(qid: String,
                     category:String,
                     title: String,
-                    body: Option[String]) {
+                    body: Option[String],
+                    submittedTime: DateTime) {
   val titleNlp = new Document(title)
   val bodyNlp = new Document(body.getOrElse(""))
 }
@@ -22,6 +24,8 @@ object Question {
         "qid" -> Json.string(q.qid),
         "category" -> Json.string(q.category),
         "title" -> Json.string(q.title),
-        "body" -> Json.string(q.body.getOrElse(""))).toString
+        "body" -> Json.string(q.body.getOrElse("")),
+        "submittedTime" -> Json.string(q.submittedTime.toString)
+      ).toString
     }
 }

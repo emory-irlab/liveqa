@@ -1,7 +1,7 @@
 package edu.emory.mathcs.ir.liveqa
 
 import com.twitter.finagle.http.filter.Cors
-import com.twitter.finagle.http.{Request, Response, TlsFilter}
+import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.netty3.Netty3ListenerTLSConfig
 import com.twitter.finagle.param.Stats
 import com.twitter.finagle.ssl.Ssl
@@ -12,10 +12,13 @@ import com.twitter.server.TwitterServer
 import com.twitter.util.{Await, FuturePool}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import edu.emory.mathcs.ir.liveqa.base.{Answer, Question}
+import edu.emory.mathcs.ir.liveqa.base.{Answer, MergingCandidateGenerator, Question}
 import edu.emory.mathcs.ir.liveqa.crowd.CrowdDb
 import edu.emory.mathcs.ir.liveqa.util.LogFormatter
+import edu.emory.mathcs.ir.liveqa.web.WebSearchCandidateGenerator
+import edu.emory.mathcs.ir.liveqa.yahooanswers.YahooAnswerCandidateGenerator
 import io.finch._
+import org.joda.time.DateTime
 
 /**
   * Created by dsavenk on 4/19/16.
@@ -27,22 +30,32 @@ object MainApi extends TwitterServer with LazyLogging {
 
   private val liveQaParams = param("qid") :: param("category") ::
     param("title") :: param("body")
-  val getApi: Endpoint[Answer] = get(liveQaParams)(respond(_,_,_,_))
-  val postApi: Endpoint[Answer] = post(liveQaParams)(respond(_,_,_,_))
-  val currentQuestionApi: Endpoint[Question] = get("question")(getCurrentQuestion)
+  val getEndpoint: Endpoint[Answer] = get(liveQaParams)(respond(_,_,_,_))
+  val postEndpoint: Endpoint[Answer] = post(liveQaParams)(respond(_,_,_,_))
+  val currentQuestionEndpoint: Endpoint[Question] = get("question")(getCurrentQuestion)
+  val workerAnswerEndpoint: Endpoint[Unit] = get("worker_answer" :: param("qid") :: param("answer"))(addWorkerAnswer(_,_))
+  val getAnswersEndpoint: Endpoint[Seq[Answer]] = get("get_answers" :: param("qid") :: param("worker"))(getAnswersToRate(_,_))
+  val rateAnswerEndpoint: Endpoint[Unit] = get("rate_answer" :: param("aid") :: param("worker") :: param("rating"))(rateAnswer(_,_,_))
 
   // TODO(denxx): I should make this more restrictive and allow requests from our servers only.
   // This is to let cross-domain requests.
   val corsFilter = new Cors.HttpFilter(Cors.UnsafePermissivePolicy)
   val api: Service[Request, Response] = corsFilter andThen
-    (getApi :+: postApi :+: currentQuestionApi).toService
+    (getEndpoint :+: postEndpoint :+: currentQuestionEndpoint :+: workerAnswerEndpoint :+: getAnswersEndpoint :+: rateAnswerEndpoint).toService
+
+  // Question answering module.
+  val questionAnswerer = new TextQuestionAnswerer(
+    new MergingCandidateGenerator(
+      new YahooAnswerCandidateGenerator,
+      new WebSearchCandidateGenerator)
+  )
 
   def main(): Unit = {
     val server = Http.server
       .configured(Stats(statsReceiver))
       .withTls(Netty3ListenerTLSConfig(() =>
-        Ssl.server("src/main/resources/ssl/carbonite.crt",
-          "src/main/resources/ssl/carbonite.key", null, null, null)))
+        Ssl.server(cfg.getString("ssl.certificate"), cfg.getString("ssl.key"),
+          null, null, null)))
       .serve(port, api)
 
     onExit { server.close() }
@@ -56,31 +69,44 @@ object MainApi extends TwitterServer with LazyLogging {
         // Log the question.
         logger.info(LogFormatter("QUESTION", Array(qid, title, body)))
         val question = new Question(qid, category, title,
-          if (body.trim.isEmpty) None else Some(body))
-
-        if (cfg.getBoolean("use_crowd")) {
-          CrowdDb.postQuestion(question)
-        }
+          if (body.trim.isEmpty) None else Some(body), DateTime.now)
 
         // Generate the answer.
-        val answer = QuestionAnswerer(question)
+        val answer = questionAnswerer.answer(question)
 
         // Log and return the answer.
         logger.info(LogFormatter("ANSWER", Array(answer.answer)))
-
-        // Setting the answered status for the question.
-        if (cfg.getBoolean("use_crowd")) {
-          CrowdDb.setAnswered(question)
-        }
-
         Ok(answer)
       }
     }
   }
 
+  /**
+    * @return Returns the current question in json format.
+    */
   def getCurrentQuestion = {
     val question = CrowdDb.currentQuestion
     if (question.isDefined) Ok(question.get)
     else NotFound(new Exception("No pending questions."))
+  }
+
+  /**
+    * Add the answer received from mechanical turk to the database.
+    * @param qid Qid of the current question.
+    * @param answer The answer submitted by a mechanical turk worker.
+    * @return Ok
+    */
+  def addWorkerAnswer(qid:String, answer:String) = {
+    CrowdDb.addAnswer(qid, answer, "Mechanical Turk")
+    Ok()
+  }
+
+  def getAnswersToRate(qid: String, worker: String) = {
+    Ok(CrowdDb.getAnswers(qid, worker))
+  }
+
+  def rateAnswer(aid: String, worker: String, rating: String) = {
+    CrowdDb.rateAnswer(aid.toInt, worker, rating.toInt)
+    Ok()
   }
 }

@@ -1,5 +1,8 @@
 package edu.emory.mathcs.ir.liveqa.base
 
+import io.circe._
+import io.circe.generic.auto._
+import io.circe.syntax._
 import io.finch.EncodeResponse
 
 /**
@@ -7,7 +10,14 @@ import io.finch.EncodeResponse
   * to generate the answer and some additional information expected by the TREC
   * LiveQA organizers.
   */
-class Answer(val answer: String, val sources: Array[String]) {
+case class Answer(id:Int, answer: String, sources: Array[String]) {
+
+  /**
+    * Alternative constructor, that doesn't take id as a parameter.
+    * @param answer The answer to the question.
+    * @param sources The sources used to generate the answer.
+    */
+  def this(answer:String, sources: Array[String]) = this(0, answer, sources)
 
   /**
     * Encodes the answer in XML format.
@@ -32,4 +42,7 @@ object Answer {
     EncodeResponse.fromString("application/xml") {
       answer => answer.toXml.toString
     }
+
+  implicit val esa: EncodeResponse[Seq[Answer]] =
+    EncodeResponse.fromString("application/json") (_.asJson.noSpaces)
 }

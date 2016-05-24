@@ -14,7 +14,6 @@ object WebSearch extends LazyLogging {
   private var bing = restartBing()
 
   def apply(query: String): Seq[WebDocument] = {
-    // TODO(denxx): What happens if it runs out of quota?
     for (i <- 1 to keys.size()) {
       try {
         return bing.SearchWeb(query).take(cfg.getInt("qa.web_answers_results"))

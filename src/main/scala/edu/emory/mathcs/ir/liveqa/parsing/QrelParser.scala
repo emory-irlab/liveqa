@@ -1,9 +1,8 @@
 package edu.emory.mathcs.ir.liveqa.parsing
 
-import java.io.{BufferedReader, FileReader}
-
 import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.{Relevance, WEB}
 import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, Question}
+import org.joda.time.DateTime
 
 import scala.collection.mutable
 import scala.io.Source
@@ -18,7 +17,7 @@ object QrelParser {
     for (line <- src.getLines()) {
       line.split("\t", -1) match {
         case Array(_, qid, rel, title, body, cat, mainCat) if rel.isEmpty =>
-          questions += ((new Question(qid, mainCat, title, Option(body)),
+          questions += ((new Question(qid, mainCat, title, Option(body), DateTime.now()),
             new mutable.MutableList[AnswerCandidate]))
         case Array(_, qid, rel, text, source, _, _) =>
           questions.last._2 += new AnswerCandidate(WEB, text, source)
