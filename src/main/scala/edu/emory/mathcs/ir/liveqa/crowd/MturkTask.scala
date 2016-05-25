@@ -1,12 +1,16 @@
 package edu.emory.mathcs.ir.liveqa.crowd
 
+import com.amazonaws.mturk.requester.QualificationRequirement
 import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.mturk.util.PropertiesClientConfig
+import com.typesafe.config.ConfigFactory
 
 /**
   * Created by dsavenk on 5/20/16.
   */
 object MturkTask {
+  val cfg = ConfigFactory.load()
+
   val service = new RequesterService(
     new PropertiesClientConfig("src/main/resources/mturk.properties"))
   def balance = service.getAccountBalance
@@ -18,9 +22,23 @@ object MturkTask {
     </ExternalQuestion>
 
   def main(args: Array[String]): Unit = {
-    // TODO(denxx): This should come from the configuration file.
-    service.createHIT("Answer questions in real time",
-      "You will need to sit and wait for questions",
-      0.01, externalQuestion.toString, 1)
+
+    val responseGroup: Array[String] = null
+    val qualifications: Array[QualificationRequirement] = null
+    val requesterAnnotation:String = null
+
+    val hit = service.createHIT(null,
+      cfg.getString("qa.crowd.hit.title"),
+      cfg.getString("qa.crowd.hit.description"),
+      cfg.getString("qa.crowd.hit.keywords"),
+      externalQuestion.toString,
+      cfg.getDouble("qa.crowd.hit.price"),
+      16 * 60, // 16 minutes
+      60 * 60 * 24 * 2, // 2 day auto approval
+      cfg.getLong("qa.crowd.hit.expire_seconds"),
+      cfg.getInt("qa.crowd.hit.count"),
+      requesterAnnotation, //requesterAnnotation
+      qualifications, // qualificationRequirements
+      responseGroup)
   }
 }
