@@ -1,4 +1,4 @@
-package edu.emory.mathcs.ir.liveqa.web
+package edu.emory.mathcs.ir.liveqa.verticals.web
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging

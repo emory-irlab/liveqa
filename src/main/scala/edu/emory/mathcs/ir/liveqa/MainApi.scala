@@ -12,10 +12,11 @@ import com.twitter.server.TwitterServer
 import com.twitter.util.{Await, FuturePool}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.CROWD
 import edu.emory.mathcs.ir.liveqa.base.{Answer, MergingCandidateGenerator, Question}
 import edu.emory.mathcs.ir.liveqa.crowd.{CrowdDb, CrowdQuestionAnswerer}
 import edu.emory.mathcs.ir.liveqa.util.LogFormatter
-import edu.emory.mathcs.ir.liveqa.web.WebSearchCandidateGenerator
+import edu.emory.mathcs.ir.liveqa.verticals.web.WebSearchCandidateGenerator
 import edu.emory.mathcs.ir.liveqa.verticals.yahooanswers.YahooAnswerCandidateGenerator
 import io.finch._
 import org.joda.time.DateTime
@@ -29,7 +30,7 @@ object MainApi extends TwitterServer with LazyLogging {
   val answerLatency: Stat = statsReceiver.stat("answer_latency")
 
   private val liveQaParams = param("qid") :: param("category") ::
-    param("title") :: param("body")
+    param("title") :: paramOption("body")
   val getEndpoint: Endpoint[Answer] = get(liveQaParams)(respond(_,_,_,_))
   val postEndpoint: Endpoint[Answer] = post(liveQaParams)(respond(_,_,_,_))
   val currentQuestionEndpoint: Endpoint[Question] = get("question")(getCurrentQuestion)
@@ -70,13 +71,12 @@ object MainApi extends TwitterServer with LazyLogging {
     Await.ready(adminHttpServer)
   }
 
-  def respond(qid:String, category:String, title:String, body:String) = {
+  def respond(qid:String, category:String, title:String, body:Option[String]) = {
     FuturePool.unboundedPool {
       Stat.time(answerLatency) {
         // Log the question.
-        logger.info(LogFormatter("QUESTION", Array(qid, title, body)))
-        val question = new Question(qid, category, title,
-          if (body.trim.isEmpty) None else Some(body), DateTime.now)
+        logger.info(LogFormatter("QUESTION", Array(qid, title, body.getOrElse(""))))
+        val question = new Question(qid, category, title, body, DateTime.now)
 
         // Generate the answer.
         val answer = questionAnswerer.answer(question)
@@ -104,7 +104,7 @@ object MainApi extends TwitterServer with LazyLogging {
     * @return Ok
     */
   def addWorkerAnswer(qid:String, answer:String, worker:String) = {
-    CrowdDb.addAnswer(qid, answer, "Mechanical Turk", worker)
+    CrowdDb.addAnswer(qid, answer, "Mechanical Turk", worker, CROWD)
     Ok()
   }
 

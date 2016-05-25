@@ -1,4 +1,4 @@
-package edu.emory.mathcs.ir.liveqa.web
+package edu.emory.mathcs.ir.liveqa.verticals.web
 
 import java.util.concurrent.TimeUnit
 

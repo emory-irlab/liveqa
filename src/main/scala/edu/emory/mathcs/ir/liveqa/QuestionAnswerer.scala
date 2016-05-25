@@ -7,7 +7,7 @@ import edu.emory.mathcs.ir.liveqa.verticals.yahooanswers.{Search, YahooAnswerCan
 import com.twitter.util.{Await, Duration}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import edu.emory.mathcs.ir.liveqa.web.WebSearchCandidateGenerator
+import edu.emory.mathcs.ir.liveqa.verticals.web.WebSearchCandidateGenerator
 
 /**
   * Main trait for question-answering modules.

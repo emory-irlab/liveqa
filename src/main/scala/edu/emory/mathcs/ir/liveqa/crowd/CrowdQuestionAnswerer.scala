@@ -25,7 +25,7 @@ class CrowdQuestionAnswerer(candidateGenerator: CandidateGeneration)
 
     // Add candidates to the database so workers could rate them.
     CrowdDb.addAnswers(rankedCandidates.take(3).zipWithIndex.map {
-      case (c, rank) => (question.qid, c.text, c.source, "", rank)
+      case (c, rank) => (question.qid, c.text, c.source, "", rank, c.answerType)
     })
 
     // Compute how many seconds do we have left.

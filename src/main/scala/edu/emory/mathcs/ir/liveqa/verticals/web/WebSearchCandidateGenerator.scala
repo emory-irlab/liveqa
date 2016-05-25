@@ -1,4 +1,4 @@
-package edu.emory.mathcs.ir.liveqa.web
+package edu.emory.mathcs.ir.liveqa.verticals.web
 
 import com.twitter.util.Future
 import edu.emory.mathcs.ir.liveqa.base.{Question, QueryGeneration, CandidateGeneration, AnswerCandidate}

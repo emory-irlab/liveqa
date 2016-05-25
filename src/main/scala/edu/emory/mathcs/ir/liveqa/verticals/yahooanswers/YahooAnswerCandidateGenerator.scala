@@ -29,7 +29,8 @@ class YahooAnswerCandidateGenerator
         Search(_, cfg.getInt("qa.yahoo_answers_results"))
       } map {
         futureResults => futureResults.map(
-          results => results.flatten.flatMap(createCandidates(_)))
+          results => results.flatten.filter(_.qid != question.qid)
+            .flatMap(createCandidates(_)))
       }
     }
     results.map(futureResults => futureResults.flatten)
