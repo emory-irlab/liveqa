@@ -61,9 +61,9 @@ object MainApi extends TwitterServer with LazyLogging {
   def main(): Unit = {
     val server = Http.server
       .configured(Stats(statsReceiver))
-//      .withTls(Netty3ListenerTLSConfig(() =>
-//        Ssl.server(cfg.getString("ssl.certificate"), cfg.getString("ssl.key"),
-//          null, null, null)))
+      .withTls(Netty3ListenerTLSConfig(() =>
+        Ssl.server(cfg.getString("ssl.certificate"), cfg.getString("ssl.key"),
+          null, null, null)))
       .serve(port, api)
 
     onExit { server.close() }
