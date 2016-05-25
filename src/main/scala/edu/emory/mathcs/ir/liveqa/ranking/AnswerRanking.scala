@@ -56,6 +56,6 @@ class ScoringBasedRanking(scorer: AnswerScoring) extends AnswerRanking {
     */
   override def rank(question: Question, candidates: Seq[AnswerCandidate])
       : Seq[AnswerCandidate] = {
-    candidates.sorted(Ordering.by(scorer(question, _: AnswerCandidate)).reverse)
+    candidates.sorted(Ordering.by(scorer.score(question, _: AnswerCandidate)).reverse)
   }
 }

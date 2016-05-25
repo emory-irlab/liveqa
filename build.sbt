@@ -12,6 +12,7 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" %  "logback-classic" % "1.1.7",
   "com.github.finagle" %% "finch-core" % "0.10.0",
   "com.github.finagle" %% "finch-circe" % "0.10.0",
+  "com.google.protobuf" % "protobuf-java" % "2.6.1",
   "com.twitter" %% "twitter-server" % "1.20.0",
   "com.typesafe" % "config" % "1.3.0",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.4.0",

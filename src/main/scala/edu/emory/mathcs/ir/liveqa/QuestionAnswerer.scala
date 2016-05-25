@@ -7,6 +7,7 @@ import edu.emory.mathcs.ir.liveqa.verticals.yahooanswers.{Search, YahooAnswerCan
 import com.twitter.util.{Await, Duration}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import edu.emory.mathcs.ir.liveqa.ranking.AnswerRanking
 import edu.emory.mathcs.ir.liveqa.verticals.web.WebSearchCandidateGenerator
 
 /**
@@ -70,7 +71,8 @@ trait RankingBasedQuestionAnswering extends QuestionAnswering {
 /**
   * The main question answering object, that maps a question into the answer.
   */
-class TextQuestionAnswerer(candidateGenerator: CandidateGeneration)
+class TextQuestionAnswerer(candidateGenerator: CandidateGeneration,
+                           ranker: AnswerRanking)
   extends RankingBasedQuestionAnswering with LazyLogging {
 
   // Application config
@@ -98,8 +100,9 @@ class TextQuestionAnswerer(candidateGenerator: CandidateGeneration)
     * @return A ranked list of candidate answers, where the head is the best
     *         candidate.
     */
-  override def rankCandidates(question: Question, candidates: Seq[AnswerCandidate]): Seq[AnswerCandidate] = {
-    candidates
+  override def rankCandidates(question: Question,
+                              candidates: Seq[AnswerCandidate]): Seq[AnswerCandidate] = {
+    ranker.rank(question, candidates)
   }
 
   /**
@@ -111,6 +114,8 @@ class TextQuestionAnswerer(candidateGenerator: CandidateGeneration)
     * @return The final response of the question answering system.
     */
   override def generateAnswer(question: Question, rankedCandidates: Seq[AnswerCandidate]): Answer = {
-    new Answer(if (rankedCandidates.isEmpty) "NA" else rankedCandidates.head.text, Array("Source"))
+    new Answer(
+      if (rankedCandidates.isEmpty) "NA" else rankedCandidates.head.text,
+      Array(rankedCandidates.head.source))
   }
 }

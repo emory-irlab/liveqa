@@ -12,19 +12,19 @@ class AnswerCandidate(val answerType: AnswerType,
                       val text: String,
                       val source: String) {
   val attributes = new scala.collection.mutable.HashMap[CandidateAttribute, String]
+  val features = new scala.collection.mutable.HashMap[String, Double]
   val textNlp = new Document(text)
 
   override def toString = s"$text\n\n$source"
 }
 
 object AnswerCandidate {
-  sealed trait AnswerType
+  trait AnswerType
   case object YAHOO_ANSWERS extends AnswerType
   case object ANSWERS_COM extends AnswerType
   case object WEB extends AnswerType
-  case object CROWD extends AnswerType
 
-  sealed trait CandidateAttribute
+  trait CandidateAttribute
   case object QuestionTitle extends CandidateAttribute
   case object QuestionBody extends CandidateAttribute
   case object QuestionMainCategory extends CandidateAttribute

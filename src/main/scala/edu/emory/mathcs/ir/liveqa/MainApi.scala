@@ -12,9 +12,11 @@ import com.twitter.server.TwitterServer
 import com.twitter.util.{Await, FuturePool}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.CROWD
 import edu.emory.mathcs.ir.liveqa.base.{Answer, MergingCandidateGenerator, Question}
+import edu.emory.mathcs.ir.liveqa.crowd.CrowdDb.CROWD
 import edu.emory.mathcs.ir.liveqa.crowd.{CrowdDb, CrowdQuestionAnswerer}
+import edu.emory.mathcs.ir.liveqa.ranking.{DummyRanking, ScoringBasedRanking}
+import edu.emory.mathcs.ir.liveqa.scoring.TermOverlapAnswerScorer
 import edu.emory.mathcs.ir.liveqa.util.LogFormatter
 import edu.emory.mathcs.ir.liveqa.verticals.web.WebSearchCandidateGenerator
 import edu.emory.mathcs.ir.liveqa.verticals.yahooanswers.YahooAnswerCandidateGenerator
@@ -50,12 +52,12 @@ object MainApi extends TwitterServer with LazyLogging {
       new CrowdQuestionAnswerer(
         new MergingCandidateGenerator(
           new YahooAnswerCandidateGenerator //,new WebSearchCandidateGenerator)
-    ))
+    ), new ScoringBasedRanking(new TermOverlapAnswerScorer))
     else
       new TextQuestionAnswerer(
         new MergingCandidateGenerator(
-          new YahooAnswerCandidateGenerator,
-          new WebSearchCandidateGenerator)
+          new YahooAnswerCandidateGenerator //,new WebSearchCandidateGenerator
+        ), new ScoringBasedRanking(new TermOverlapAnswerScorer)
       )
 
   def main(): Unit = {

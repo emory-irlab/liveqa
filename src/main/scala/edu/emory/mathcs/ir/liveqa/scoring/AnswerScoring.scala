@@ -12,5 +12,5 @@ trait AnswerScoring {
     * @param answer Candidate answer to score.
     * @return A floating point score for the given answer.
     */
-  def apply(question: Question, answer: AnswerCandidate): Float
+  def score(question: Question, answer: AnswerCandidate): Double
 }

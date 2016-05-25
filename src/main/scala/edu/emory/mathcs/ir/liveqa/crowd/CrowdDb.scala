@@ -20,6 +20,10 @@ import scala.concurrent.{Await, Future}
 object CrowdDb extends LazyLogging {
   private val cfg = ConfigFactory.load()
 
+  // Define additional elements for the enumeration objects.
+  case object CROWD extends AnswerType
+  case object CrowdRating extends CandidateAttribute
+
   // Database connection.
   val db = Database.forConfig("qa.crowd.db")
 
@@ -200,13 +204,13 @@ object CrowdDb extends LazyLogging {
   }
 
   /**
-    * Retrieves answer ratings and returns a mapping from answer rank to its
+    * Retrieves answer ratings and returns a mapping from answer to its
     * ratings.
     *
     * @param qid Qid of the question.
-    * @return A mapping from candidate answer rank to its ratings.
+    * @return A mapping from candidate answer to its ratings.
     */
-  def getRatedAnswers(qid: String): Map[AnswerCandidate, Seq[Int]] = {
+  def getRatedAnswers(qid: String): Map[String, Seq[Int]] = {
     val answerRatings = Await.result(
       db.run((answers.filter(_.qid === qid)
         joinLeft ratings
@@ -217,8 +221,7 @@ object CrowdDb extends LazyLogging {
     // Group by answer (its rank) and return a map from candidate rank to its ratings.
     answerRatings.groupBy(_._1).map {
       case (key, value) =>
-        (new AnswerCandidate(getAnswerTypeById(key._8), key._3, key._4),
-          value.filter(_._2.isDefined).map(_._2.get._3))
+        (key._3, value.filter(_._2.isDefined).map(_._2.get._3))
     }
   }
 
