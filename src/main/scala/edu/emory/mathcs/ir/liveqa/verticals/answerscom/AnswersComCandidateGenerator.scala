@@ -45,7 +45,7 @@ class AnswersComCandidateGenerator
             ANSWERS_COM, answer, questionAnswers.url)
 
           // Add question attributes, so we could use them later.
-          candidate.attributes(AnswerCandidate.AnswerRank) = rank.toString
+          candidate.attributes(AnswerCandidate.CandidateSourceRank) = rank.toString
           candidate.attributes(AnswerCandidate.QuestionTitle) =
             questionAnswers.title
           candidate.attributes(AnswerCandidate.QuestionBody) =

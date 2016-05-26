@@ -29,7 +29,10 @@ object AnswerCandidate {
   case object QuestionBody extends CandidateAttribute
   case object QuestionMainCategory extends CandidateAttribute
   case object QuestionCategories extends CandidateAttribute
-  case object AnswerRank extends CandidateAttribute
+  // The rank the of the answer in the original source, e.g. web page rank.
+  case object CandidateSourceRank extends CandidateAttribute
   case object Id extends CandidateAttribute
   case object Relevance extends CandidateAttribute
+  // Rank of the candidate according to some ranking function.
+  case object CandidateRank extends CandidateAttribute
 }

@@ -4,6 +4,8 @@ import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, Question}
 import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.Relevance
 import edu.emory.mathcs.ir.liveqa.scoring.AnswerScoring
 
+import scala.util.Random
+
 /**
   * A trait to rank answer candidates.
   */
@@ -39,6 +41,26 @@ class RelevanceRanking extends AnswerRanking {
     candidates.sorted(
       Ordering.by((_: AnswerCandidate).attributes.get(Relevance).get.toDouble)
         .reverse)
+  }
+}
+
+/**
+  * Returns a random ranking of the candidates.
+  * @param seed Seed of the pseudo-random number generator.
+  */
+class RandomRanking(seed: Long) extends AnswerRanking {
+  val rnd = new Random(seed)
+
+  /**
+    * Ranks a set of candidate answers according to some criteria.
+    *
+    * @param question   Question to which to rank the candidates.
+    * @param candidates Answer candidates to rank.
+    * @return A ranked list of candidate answers.
+    */
+  override def rank(question: Question,
+                    candidates: Seq[AnswerCandidate]): Seq[AnswerCandidate] = {
+    rnd.shuffle(candidates)
   }
 }
 

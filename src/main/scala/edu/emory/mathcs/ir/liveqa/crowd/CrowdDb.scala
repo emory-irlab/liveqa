@@ -35,6 +35,19 @@ object CrowdDb extends LazyLogging {
     {d => new DateTime(d.getTime, UTC)}
   )
 
+  class Workers(tag: Tag) extends Table[(Int, String, String, String, DateTime, Option[DateTime])](tag, "WORKERS") {
+    def id = column[Int]("ID", O.PrimaryKey, O.AutoInc)
+    def workerId = column[String]("WORKER_ID")
+    def assignmentId = column[String]("ASSIGNMENT_ID")
+    def hitId = column[String]("HIT_ID")
+    def start = column[DateTime]("STARTED")
+    def finish = column[Option[DateTime]]("FINISHED")
+
+    def * = (id, workerId, assignmentId, hitId, start, finish)
+    def assignment_id_index = index("idx_assignment_id", assignmentId, unique = false)
+  }
+  val workers = TableQuery[Workers]
+
   /**
     * Class defining the structure of the questions table.
     */
@@ -89,13 +102,37 @@ object CrowdDb extends LazyLogging {
     * Creates required databases.
     */
   def createDb(): Unit = {
-    val setup = (questions.schema ++ answers.schema ++ ratings.schema).create
+    val setup = (workers.schema ++ questions.schema ++
+      answers.schema ++ ratings.schema).create
 
     val setupFuture = db.run(setup)
     setupFuture onFailure  {
       case exc: Throwable => logger.error(exc.getMessage)
     }
     Await.result(setupFuture, Duration.Inf)
+  }
+
+
+  /**
+    * Adds a new worker task to the database.
+    * @param workerId MTurk worker id.
+    * @param assignmentId Mturk assignment id.
+    * @param hitId Mturk hit id.
+    */
+  def addWorkerTask(workerId: String, assignmentId: String, hitId: String): Future[_] = {
+    db.run(workers += (0, workerId, assignmentId, hitId, DateTime.now, None))
+  }
+
+  /**
+    * Finishes the given assignment by posting its finish time to the database.
+    * @param assignmentId The id of the assignment to finish.
+    */
+  def finishWorkerTask(assignmentId: String): Future[_] = {
+    db run {
+      workers.filter(_.assignmentId === assignmentId)
+        .map(_.finish)
+        .update(Some(DateTime.now))
+    }
   }
 
   /**
@@ -109,6 +146,13 @@ object CrowdDb extends LazyLogging {
         question.body.getOrElse(""), question.submittedTime, false))
   }
 
+  /**
+    * Returns the list of questions posted (and not yet answered) between the
+    * given time stamps.
+    * @param from Lower bound on time a question should be posted.
+    * @param to Upper bound on time a question should be posted.
+    * @return A sequence of non-answered questions in the given time span.
+    */
   def getQuestions(from: DateTime, to:DateTime): Seq[Question] = {
     val questionFuture = db.run(
       questions.filter(q => q.received >= from && q.received <= to && !q.answered)
@@ -256,7 +300,6 @@ object CrowdDb extends LazyLogging {
     case 4 => CROWD
     case _ => WEB
   }
-
 
   /**
     * Main method to test DB.

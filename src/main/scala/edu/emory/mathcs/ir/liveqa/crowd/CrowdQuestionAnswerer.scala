@@ -3,6 +3,7 @@ package edu.emory.mathcs.ir.liveqa.crowd
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.TextQuestionAnswerer
+import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.CandidateRank
 import edu.emory.mathcs.ir.liveqa.base.{Answer, AnswerCandidate, CandidateGeneration, Question}
 import edu.emory.mathcs.ir.liveqa.crowd.CrowdDb.CrowdRating
 import edu.emory.mathcs.ir.liveqa.ranking.AnswerRanking
@@ -30,7 +31,9 @@ class CrowdQuestionAnswerer(candidateGenerator: CandidateGeneration,
 
     // Add candidates to the database so workers could rate them.
     CrowdDb.addAnswers(ratedAnswers.zipWithIndex.map {
-      case (c, rank) => (question.qid, c.text, c.source, "", rank, c.answerType)
+      case (c, rank) =>
+        c.attributes(CandidateRank) = rank.toString
+        (question.qid, c.text, c.source, "", rank, c.answerType)
     })
 
     // Compute how many seconds do we have left.
@@ -61,13 +64,18 @@ class CrowdQuestionAnswerer(candidateGenerator: CandidateGeneration,
       if (finalCandidateList.isEmpty) {
         super.generateAnswer(question, rankedCandidates)
       } else {
+        // Sort candidates
         val sortedByRating = finalCandidateList
-          .sortBy(a => a.attributes.get(CrowdRating).get.toDouble)
-          .reverse
+          .sorted(Ordering by {
+            answer: AnswerCandidate =>
+              (-answer.attributes.get(CrowdRating).get.toDouble,
+                answer.attributes.getOrElse(CandidateRank, "-1").toInt)
+          })
 
         // Return the top answer if has rating greater than 2, or the longest
         // worker answer.
-        if (sortedByRating.head.attributes.get(CrowdRating).get.toDouble >= 2) {
+        if (sortedByRating.head.attributes.get(CrowdRating).get.toDouble >= 2
+          || crowdAnswers.isEmpty) {
           new Answer(sortedByRating.head.text, Array(sortedByRating.head.source))
         } else {
           new Answer(crowdAnswers.sortBy(a => a.text.length).reverse.head.text,
