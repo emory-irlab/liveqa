@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import com.twitter.finagle.http
 import com.twitter.finagle.util.DefaultTimer
-import com.twitter.util.{Duration, Future}
+import com.twitter.util.{Await, Duration, Future}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.util.{HtmlScraper, LogFormatter}
@@ -98,11 +98,11 @@ object YahooAnswersQuestion extends LazyLogging {
           None
     }
     val title = document >> text("h1")
-    val body = document >> text(".ya-q-text")
-    val answers = document >> texts(".ya-q-full-text")
+    val body = document >?> attr("content")("meta[name=description]")
+    val answers = document >> texts(".ya-q-full-text[itemprop=text]")
 
     // TODO(denxx): Extract additional answer metainformation, e.g. votes.
-    new YahooAnswersQuestion(qid, categories.toArray, title, body,
+    new YahooAnswersQuestion(qid, categories.toArray, title, body.getOrElse(""),
       answers.toArray)
   }
 }
