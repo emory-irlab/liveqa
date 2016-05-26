@@ -2,18 +2,17 @@ package edu.emory.mathcs.ir.liveqa.base
 
 import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.{CandidateAttribute, AnswerType}
 import edu.stanford.nlp.simple.Document
-
-
+import CandidateAnswerTextProcessor._
 
 /**
   * A candidate answer, extracted from somewhere on the web.
   */
 class AnswerCandidate(val answerType: AnswerType,
                       val text: String,
-                      val source: String) {
+                      val source: String)(implicit textProcessor: CandidateAnswerTextProcessing = AnswerTextMaxlenCutter) {
   val attributes = new scala.collection.mutable.HashMap[CandidateAttribute, String]
   val features = new scala.collection.mutable.HashMap[String, Double]
-  val textNlp = new Document(text)
+  val textNlp = new Document(textProcessor(text))
 
   override def toString = s"$text\n\n$source"
 }
