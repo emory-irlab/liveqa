@@ -28,6 +28,8 @@ class CrowdQuestionAnswerer(candidateGenerator: CandidateGeneration,
                               rankedCandidates: Seq[AnswerCandidate]): Answer = {
     val ratedAnswers =
       rankedCandidates.take(cfg.getInt("qa.crowd.topn_for_rating")).toList
+    logger.info(s"Sending ${ratedAnswers.length} answers to database")
+    ratedAnswers.foreach(a => logger.info(a.toString))
 
     // Add candidates to the database so workers could rate them.
     CrowdDb.addAnswers(ratedAnswers.zipWithIndex.map {
@@ -44,10 +46,11 @@ class CrowdQuestionAnswerer(candidateGenerator: CandidateGeneration,
 
     logger.info("Sleeping for " + secondsLeft + " seconds")
     Thread.sleep(secondsLeft * 1000)
-    logger.info("Waking up and getting the answer.")
+    logger.info("Waking up and getting the answers...")
 
     // Get answers provided by the crowd and ratings for the answers.
     val crowdAnswers = CrowdDb.getWorkerAnswer(question.qid).toList
+    logger.info(s"${crowdAnswers.length} answers provided by Turk workers")
     val answerRatings = CrowdDb.getRatedAnswers(question.qid)
 
     val finalCandidateList = ratedAnswers ::: crowdAnswers
@@ -58,6 +61,13 @@ class CrowdQuestionAnswerer(candidateGenerator: CandidateGeneration,
       answerCandidate.attributes(CrowdRating) =
         if (ratings.nonEmpty) (1.0 * ratings.sum / ratings.size).toString
         else "0.0"
+    }
+
+    logger.info("Final set of candidates answers:")
+    finalCandidateList.foreach {
+      a =>
+        logger.info(a.toString)
+        logger.info(a.attributes.getOrElse(CrowdRating, "No rating"))
     }
 
     val answer =

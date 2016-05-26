@@ -60,7 +60,7 @@ object MainApi extends TwitterServer with LazyLogging {
         val answer = questionAnswerer.answer(question)
 
         // Log and return the answer.
-        logger.info(LogFormatter("ANSWER", Array(answer.answer)))
+        logger.info(LogFormatter("ANSWER", Array(answer.answer, answer.sources.headOption.getOrElse("No sources"))))
         Ok(answer)
       }
     }
