@@ -78,9 +78,9 @@ object CrowdApi extends LazyLogging {
 
   def start(port: String): ListeningServer = {
     Http.server
-//      .withTls(Netty3ListenerTLSConfig(() =>
-//        Ssl.server(cfg.getString("ssl.certificate"), cfg.getString("ssl.key"),
-//          null, null, null)))
+      .withTls(Netty3ListenerTLSConfig(() =>
+        Ssl.server(cfg.getString("ssl.certificate"), cfg.getString("ssl.key"),
+          null, null, null)))
       .serve(port, mturkApi)
   }
 }
