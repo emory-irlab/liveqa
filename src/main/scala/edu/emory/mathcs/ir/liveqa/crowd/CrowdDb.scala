@@ -120,7 +120,11 @@ object CrowdDb extends LazyLogging {
     * @param hitId Mturk hit id.
     */
   def addWorkerTask(workerId: String, assignmentId: String, hitId: String): Future[_] = {
-    db.run(workers += (0, workerId, assignmentId, hitId, DateTime.now, None))
+    val queryFuture = db.run(workers += (0, workerId, assignmentId, hitId, DateTime.now, None))
+    queryFuture onFailure {
+      case e: Exception => logger.error(e.getMessage)
+    }
+    queryFuture
   }
 
   /**
@@ -128,11 +132,15 @@ object CrowdDb extends LazyLogging {
     * @param assignmentId The id of the assignment to finish.
     */
   def finishWorkerTask(assignmentId: String): Future[_] = {
-    db run {
+    val queryFuture = db run {
       workers.filter(_.assignmentId === assignmentId)
         .map(_.finish)
         .update(Some(DateTime.now))
     }
+    queryFuture onFailure {
+      case e: Exception => logger.error(e.getMessage)
+    }
+    queryFuture
   }
 
   /**
@@ -142,8 +150,12 @@ object CrowdDb extends LazyLogging {
     * @return A Future with the database query status.
     */
   def postQuestion(question: Question): Future[_] = {
-      db.run(questions += (question.qid, question.category, question.title,
-        question.body.getOrElse(""), question.submittedTime, false))
+    val queryFuture = db.run(questions += (question.qid, question.category, question.title,
+      question.body.getOrElse(""), question.submittedTime, false))
+    queryFuture onFailure {
+      case e: Exception => logger.error(e.getMessage)
+    }
+    queryFuture
   }
 
   /**
@@ -154,14 +166,17 @@ object CrowdDb extends LazyLogging {
     * @return A sequence of non-answered questions in the given time span.
     */
   def getQuestions(from: DateTime, to:DateTime): Seq[Question] = {
-    val questionFuture = db.run(
+    val queryFuture = db.run(
       questions.filter(q => q.received >= from && q.received <= to && !q.answered)
         .sortBy(q => q.received)
         .result).map(_.map {
           case (qid, category, title, body, time, answered) =>
             new Question(qid, category, title, Some(body), time)
         })
-    Await.result(questionFuture, Duration.Inf)
+    queryFuture onFailure {
+      case e: Exception => logger.error(e.getMessage)
+    }
+    Await.result(queryFuture, Duration.Inf)
   }
 
   /**
@@ -184,10 +199,14 @@ object CrowdDb extends LazyLogging {
     * @return The future of the database query status.
     */
   def setAnswered(question : Question): Future[_] = {
-    db.run(questions
+    val queryFuture = db.run(questions
       .filter(q => q.qid === question.qid)
       .map(q => q.answered)
       .update(true))
+    queryFuture onFailure {
+      case e: Exception => logger.error(e.getMessage)
+    }
+    queryFuture
   }
 
 
@@ -197,8 +216,12 @@ object CrowdDb extends LazyLogging {
     * @param qid Qid of the question to answer.
     * @param answer The answer to add.
     */
-  def addAnswer(qid: String, answer: String, source: String, worker: String, answerType: AnswerType) = {
-    db.run(answers += (0, qid, answer, source, worker, DateTime.now, -1, getAnswerTypeId(answerType)))
+  def addAnswer(qid: String, answer: String, source: String, worker: String, answerType: AnswerType): Future[_] = {
+    val queryFuture = db.run(answers += (0, qid, answer, source, worker, DateTime.now, -1, getAnswerTypeId(answerType)))
+    queryFuture onFailure {
+      case e: Exception => logger.error(e.getMessage)
+    }
+    queryFuture
   }
 
   /**
@@ -207,7 +230,7 @@ object CrowdDb extends LazyLogging {
     * @param a A list of answers.
     * @return A future of the database query.
     */
-  def addAnswers(a: Seq[(String, String, String, String, Int, AnswerType)]) = {
+  def addAnswers(a: Seq[(String, String, String, String, Int, AnswerType)]): Future[_] = {
     val futureQuery = db.run(
       answers ++= a.map(answer => (0, answer._1, answer._2, answer._3,
         answer._4, DateTime.now, answer._5, getAnswerTypeId(answer._6))))
@@ -230,8 +253,11 @@ object CrowdDb extends LazyLogging {
       .filter(a => (a.qid === qid) && (a.worker =!= worker))
       .joinLeft(ratings.filter(_.worker === worker)) on (_.id === _.aid)
 
-    val answerRatings = Await.result(
-      db.run(answerRatingsQuery.result), Duration.Inf)
+    val futureQuery = db.run(answerRatingsQuery.result)
+    futureQuery.onFailure {
+      case e: Exception => logger.error(e.getMessage)
+    }
+    val answerRatings = Await.result(futureQuery, Duration.Inf)
     answerRatings.filterNot(_._2.isDefined)
       .map(a => new Answer(a._1._1, a._1._3, Array(a._1._4)))
   }
@@ -243,8 +269,12 @@ object CrowdDb extends LazyLogging {
     * @param worker Id of the worker, who rated the answer.
     * @param rating The rating of the answer.
     */
-  def rateAnswer(aid: Int, worker: String, rating: Int): Unit = {
-    db.run(ratings += (0, aid, rating, worker))
+  def rateAnswer(aid: Int, worker: String, rating: Int): Future[_] = {
+    val queryFuture = db.run(ratings += (0, aid, rating, worker))
+    queryFuture onFailure {
+      case e: Exception => logger.error(e.getMessage)
+    }
+    queryFuture
   }
 
   /**
@@ -255,12 +285,14 @@ object CrowdDb extends LazyLogging {
     * @return A mapping from candidate answer to its ratings.
     */
   def getRatedAnswers(qid: String): Map[String, Seq[Int]] = {
-    val answerRatings = Await.result(
-      db.run((answers.filter(_.qid === qid)
-        joinLeft ratings
-        on (_.id === _.aid))
-        .result),
-      Duration.Inf)
+    val futureQuery = db.run((answers.filter(_.qid === qid)
+      joinLeft ratings
+      on (_.id === _.aid))
+      .result)
+    futureQuery onFailure {
+      case e: Exception => logger.error(e.getMessage)
+    }
+    val answerRatings = Await.result(futureQuery, Duration.Inf)
 
     // Group by answer (its rank) and return a map from candidate rank to its ratings.
     answerRatings.groupBy(_._1).map {
@@ -277,9 +309,12 @@ object CrowdDb extends LazyLogging {
     * @return A list of [[AnswerCandidate]] generated by Mechanical Turk workers.
     */
   def getWorkerAnswer(qid: String): Seq[AnswerCandidate] = {
-    val workerAnswers = Await.result(
-      db.run(answers.filter(a => (a.qid === qid) && (a.worker =!= "")).result),
-      Duration.Inf)
+    val futureQuery = db.run(
+      answers.filter(a => (a.qid === qid) && (a.worker =!= "")).result)
+    futureQuery onFailure {
+      case e: Exception => logger.error(e.getMessage)
+    }
+    val workerAnswers = Await.result(futureQuery, Duration.Inf)
     workerAnswers.map(a => new AnswerCandidate(CROWD, a._3, a._4))
   }
 

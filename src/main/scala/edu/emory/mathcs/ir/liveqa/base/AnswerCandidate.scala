@@ -11,8 +11,22 @@ class AnswerCandidate(val answerType: AnswerType,
                       val text: String,
                       val source: String)(implicit textProcessor: CandidateAnswerTextProcessing = AnswerTextMaxlenCutter) {
   val attributes = new scala.collection.mutable.HashMap[CandidateAttribute, String]
-  val features = new scala.collection.mutable.HashMap[String, Double]
+  private val attributesNlp = new scala.collection.mutable.HashMap[CandidateAttribute, Document]
+  val features = new scala.collection.mutable.HashMap[String, Float]
   val textNlp = new Document(textProcessor(text))
+
+  /**
+    * Returns Stanford CoreNLP [[Document]] object for the given attribute.
+    * @param attr The attribute to get.
+    * @return [[Document]] object that can be used for NLP analysis of the
+    *        attribute text.
+    */
+  def getAttributeNlp(attr: CandidateAttribute): Option[Document] = {
+    if (attributes.contains(attr))
+      Some(attributesNlp.getOrElseUpdate(attr, new Document(attributes.getOrElse(attr, ""))))
+    else
+      None
+  }
 
   override def toString = s"$text\n\n$source"
 }

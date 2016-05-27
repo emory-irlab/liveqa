@@ -27,5 +27,6 @@ libraryDependencies ++= Seq(
   "net.ruippeixotog" %% "scala-scraper" % "1.0.0",
   "org.apache.tika" % "tika-parsers" % "1.12",
   "org.joda" % "joda-convert" % "1.7",
+  "org.scala-lang.modules" %% "scala-pickling" % "0.10.1",
   "org.xerial" % "sqlite-jdbc" % "3.8.11.2"
 )

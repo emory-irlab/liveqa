@@ -71,7 +71,7 @@ class Dcg(k: Int) extends Metric {
     ranking.take(k).map(_.attributes.get(Relevance).get.toDouble).zipWithIndex
       .foldLeft(0.0)((res, relWithIndex) =>
         res +
-          (math.pow(2, relWithIndex._1) - 1) / math.log(relWithIndex._2 + 2))
+          ((1 << math.max(0, relWithIndex._1.toInt - 1)) - 1) / math.log(relWithIndex._2 + 2))
   }
 }
 
