@@ -30,7 +30,7 @@ class AlphabetSparseDataPoint(pointLabel: Float,
   }
 
   override def getFeatureValue(i: Int): Float = {
-    feats(i)
+    feats.getOrElse(i, Float.NaN)
   }
 
   override def setFeatureValue(i: Int, v: Float): Unit = {

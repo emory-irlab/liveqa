@@ -6,6 +6,7 @@ import org.joda.time.DateTime
 
 import scala.collection.mutable
 import scala.io.Source
+import scala.util.Random
 
 /**
   * Parses TREC qrel file format and returns an array of questions with their
@@ -24,6 +25,8 @@ object QrelParser {
           questions.last._2.last.attributes(Relevance) = rel
       }
     }
-    questions
+    questions.map {
+      case (question, candidates) => (question, Random.shuffle(candidates))
+    }
   }
 }

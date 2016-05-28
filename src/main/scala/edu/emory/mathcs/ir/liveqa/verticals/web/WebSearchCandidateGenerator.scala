@@ -1,7 +1,8 @@
 package edu.emory.mathcs.ir.liveqa.verticals.web
 
 import com.twitter.util.Future
-import edu.emory.mathcs.ir.liveqa.base.{Question, QueryGeneration, CandidateGeneration, AnswerCandidate}
+import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.{CandidateSourceRank, QuestionBody, QuestionTitle}
+import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, CandidateGeneration, QueryGeneration, Question}
 
 /**
   * Generates candidate answers using web search to retrieve a set of relevant
@@ -25,15 +26,27 @@ class WebSearchCandidateGenerator
     * @param document [[WebDocument]] to generate answer candidates from.
     * @return A future sequence of candidate answers.
     */
-  def generateCandidates(document: WebDocument): Future[Seq[AnswerCandidate]] = {
-    document.content.map {
+  def generateCandidates(document: WebDocument, rank: Int): Future[Seq[AnswerCandidate]] = {
+    val candidatesFuture = document.content.map {
       docContent =>
         if (docContent.isDefined)
           // TODO(denxx): Generate better candidates from the content.
-          Seq(new AnswerCandidate(AnswerCandidate.WEB, document.description, document.url))
+          Seq(new AnswerCandidate(AnswerCandidate.WEB, document.description, document.url)) ++
+          ContentExtractor(docContent.get).map(new AnswerCandidate(AnswerCandidate.WEB, _, document.url))
         else
           Nil
     }
+
+    var prevCandidate: String = ""
+    candidatesFuture.map(candidates => candidates.foreach {
+      c =>
+        c.attributes(QuestionTitle) = document.title
+        c.attributes(QuestionBody) = prevCandidate
+        c.attributes(CandidateSourceRank) = rank.toString
+        prevCandidate = c.text
+    })
+
+    candidatesFuture
   }
 
   /**
@@ -47,7 +60,7 @@ class WebSearchCandidateGenerator
     val queries = getSearchQueries(question)
     Future.collect(queries.map {
       query =>
-        Future.collect(WebSearch(query).map(generateCandidates(_)))
+        Future.collect(WebSearch(query).zipWithIndex.map(d => generateCandidates(d._1, d._2)))
           .map(_.flatten)  // We first collect futures, and then flatten nested
                            // sequences.
     }).map(_.flatten)

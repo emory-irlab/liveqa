@@ -1,13 +1,17 @@
 package edu.emory.mathcs.ir.liveqa.scoring.features
 
+import java.io.{BufferedInputStream, FileInputStream}
+import java.util.zip.GZIPInputStream
+
 import com.typesafe.config.ConfigFactory
+import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, Question}
 import edu.emory.mathcs.ir.liveqa.util.NlpUtils
 
 /**
  * Created by dsavenk on 5/27/16.
  */
-class NpmiDictFeatures extends FeatureCalculation {
+class NpmiDictFeatures extends FeatureCalculation with LazyLogging {
   val cfg = ConfigFactory.load()
   val npmiDict = readDictionary(cfg.getString("qa.npmi_dictionary_file"))
 
@@ -38,13 +42,13 @@ class NpmiDictFeatures extends FeatureCalculation {
       "Npmi>0.4" -> npmi.count(_ > 0.4),
       "Npmi>0.3" -> npmi.count(_ > 0.3),
       "Npmi>0.2" -> npmi.count(_ > 0.2),
-      "Npmi>0.1" -> npmi.count(_ > 0.1),
+      "Npmi>0.1" -> npmi.count(_ > 0.1)
     )
 
     val features2 = if (npmi.nonEmpty) Map(
       "MaxNpmi" -> npmi.max.toFloat,
       "MinNpmi" -> npmi.min.toFloat,
-      "AverageNpmi" -> npmi.sum.toFloat / npmi.size,
+      "AverageNpmi" -> npmi.sum.toFloat / npmi.size
     )
     else Map[String, Float]()
 
@@ -52,6 +56,14 @@ class NpmiDictFeatures extends FeatureCalculation {
   }
 
   def readDictionary(file: String): Map[(String, String), Double] = {
-    scala.io.Source.fromFile(file).getLines().map(_.split("\t")).map(f => (f(0), f(1)) -> f(2).toDouble).toMap
+    logger.info("Reading npmi dictionary...")
+    val res = scala.io.Source.fromInputStream(
+      new GZIPInputStream(
+        new BufferedInputStream(
+          new FileInputStream(file))))
+      .getLines().map(_.split("\t")).map(f => (f(0), f(1)) -> f(2).toDouble).toMap
+    logger.info("Done reading npmi dictionary...")
+
+    res
   }
 }

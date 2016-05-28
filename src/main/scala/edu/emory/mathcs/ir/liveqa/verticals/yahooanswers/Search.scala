@@ -21,8 +21,10 @@ import net.ruippeixotog.scalascraper.model.Element
   */
 object Search extends LazyLogging {
   val resultsPageDocCount = 10
-  val yahooAnswerSearchBaseUrl = "answers.yahoo.com:443"
-  val yahooAnswerSearchUrl = "https://answers.yahoo.com/search/search_result"
+  //val yahooAnswerSearchBaseUrl = "answers.yahoo.com:443"
+  val yahooAnswerSearchBaseUrl = "answers.search.yahoo.com:443"
+  //val yahooAnswerSearchUrl = "https://answers.yahoo.com/search/search_result"
+  val yahooAnswerSearchUrl = "https://answers.search.yahoo.com/search"
   private val cfg = ConfigFactory.load()
   implicit val timer = DefaultTimer.twitter
 
@@ -55,8 +57,8 @@ object Search extends LazyLogging {
     val searchUrl = http.Request.queryString(yahooAnswerSearchUrl,
       Map("p" -> URLEncoder.encode(query, "UTF-8"), "s" -> page.toString))
 
-    // Make a request with 1 second time limit.
-    val answers = HtmlScraper(searchUrl)
+    // For some reason Yahoo! Answers doesn't find anything if plus is used
+    val answers = HtmlScraper(searchUrl.replace("%2B", "%20"))
       .within(Duration(cfg.getInt("request.timeout"), TimeUnit.SECONDS))
       .flatMap {
         content =>
@@ -86,7 +88,8 @@ object Search extends LazyLogging {
     val browser = JsoupBrowser()
     val document = browser.parseString(searchHtml)
     val answers: List[Element] =
-      document >> element("#yan-questions") >> elementList("li")
+      //document >> element("#yan-questions") >> elementList("li")
+      document >> element(".searchCenterMiddle") >> elementList("li")
     answers
       .map(answer => answer >> attr("href")("h3 a"))
       .map(href => href.split("qid=")(1))

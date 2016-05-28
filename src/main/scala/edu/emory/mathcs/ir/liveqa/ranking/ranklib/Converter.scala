@@ -21,7 +21,7 @@ object Converter {
 
   def createDataPoint(question: Question, candidate: AnswerCandidate,
                       candidateId: String, alphabet: collection.mutable.Map[String, Int]): DataPoint = {
-    val label = math.max(0, candidate.attributes(Relevance).toFloat - 1)
+    val label = math.max(0, candidate.attributes.getOrElse(Relevance, "0").toFloat - 1)
     val point = new AlphabetSparseDataPoint(label, question.qid, candidate.features.toMap, alphabet)
     point.setDescription(candidateId)
     point

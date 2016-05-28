@@ -11,7 +11,7 @@ import ciir.umass.edu.learning.{DataPoint, RANKER_TYPE, RankerTrainer}
 import ciir.umass.edu.metric.NDCGScorer
 import edu.emory.mathcs.ir.liveqa.parsing.QrelParser
 import edu.emory.mathcs.ir.liveqa.ranking.ranklib.Converter
-import edu.emory.mathcs.ir.liveqa.scoring.features.{AnswerStatsFeatures, Bm25Features, MergeFeatures, TermOverlapFeatures}
+import edu.emory.mathcs.ir.liveqa.scoring.features._
 
 /**
   * An app to evaluate answer ranker.
@@ -22,7 +22,7 @@ object TrainApp extends App {
   val alphabet: collection.mutable.Map[String, Int] = new collection.mutable.HashMap[String, Int]
 
   val featureGenerator = new MergeFeatures(
-    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures
+    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures, new MatchesFeatures
   )
   qrels.foreach {
     case (question, candidates) =>
@@ -39,7 +39,7 @@ object TrainApp extends App {
   val features = Array.fill(DataPoint.getFeatureCount){0}
   for (i <- features.indices) features(i) = i + 1
 
-  val ranker = trainer.train(RANKER_TYPE.LISTNET, samples.asJava, samplesValidation.asJava, features, new NDCGScorer)
+  val ranker = trainer.train(RANKER_TYPE.LAMBDAMART, samples.asJava, samplesValidation.asJava, features, new NDCGScorer)
 
   ranker.save(args(2))
   val alphabetStream = new FileOutputStream(args(3))

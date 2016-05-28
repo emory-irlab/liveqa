@@ -4,10 +4,11 @@ import ciir.umass.edu.learning.RankerFactory
 import edu.emory.mathcs.ir.liveqa.parsing.QrelParser
 import edu.emory.mathcs.ir.liveqa.ranking._
 import edu.emory.mathcs.ir.liveqa.scoring.TermOverlapAnswerScorer
-import edu.emory.mathcs.ir.liveqa.scoring.features.{AnswerStatsFeatures, Bm25Features, MergeFeatures, TermOverlapFeatures}
+import edu.emory.mathcs.ir.liveqa.scoring.features._
 
 import scala.pickling.Defaults._
 import scala.pickling.binary._
+import scala.util.Random
 
 /**
   * An app to evaluate answer ranker.
@@ -19,12 +20,8 @@ object EvalApp extends App {
   val p1 = new AverageRankingMetric(new PrecisionAtK(1))
   val p10 = new AverageRankingMetric(new PrecisionAtK(10))
 
-  val rawFromFile = scala.io.Source.fromFile(args(2)).map(_.toByte).toArray
-  val alphabetUnpickleValue = BinaryPickle(rawFromFile)
-  val alphabet = alphabetUnpickleValue.unpickle[collection.mutable.Map[String, Int]]
-
   val featureGenerator = new MergeFeatures(
-    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures
+    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures, new MatchesFeatures
   )
 
   val rankers = Array(new DummyRanking,
@@ -32,7 +29,7 @@ object EvalApp extends App {
     new RandomRanking(12345),
     new RelevanceRanking,
     new ScoringBasedRanking(new TermOverlapAnswerScorer),
-    new RanklibModelRanker(new RankerFactory().loadRankerFromFile(args(1)), featureGenerator, alphabet))
+    RanklibModelRanker.create(args(1), featureGenerator, args(2)))
 
   for (ranker <- rankers) {
     val rankedQrels = qrels.map {

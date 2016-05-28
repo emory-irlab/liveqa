@@ -25,6 +25,7 @@ libraryDependencies ++= Seq(
   "net.ettinsmoor" %% "bingerator" % "0.2.4",
   "net.ettinsmoor" % "java-aws-mturk" % "1.6.2",
   "net.ruippeixotog" %% "scala-scraper" % "1.0.0",
+  "org.apache.tika" % "tika-core" % "1.12",
   "org.apache.tika" % "tika-parsers" % "1.12",
   "org.joda" % "joda-convert" % "1.7",
   "org.scala-lang.modules" %% "scala-pickling" % "0.10.1",

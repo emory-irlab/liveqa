@@ -10,9 +10,11 @@ import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.base.{Answer, MergingCandidateGenerator, Question}
 import edu.emory.mathcs.ir.liveqa.crowd.{CrowdApi, CrowdQuestionAnswerer}
-import edu.emory.mathcs.ir.liveqa.ranking.ScoringBasedRanking
+import edu.emory.mathcs.ir.liveqa.ranking.{RanklibModelRanker, ScoringBasedRanking}
 import edu.emory.mathcs.ir.liveqa.scoring.TermOverlapAnswerScorer
+import edu.emory.mathcs.ir.liveqa.scoring.features._
 import edu.emory.mathcs.ir.liveqa.util.LogFormatter
+import edu.emory.mathcs.ir.liveqa.verticals.web.WebSearchCandidateGenerator
 import edu.emory.mathcs.ir.liveqa.verticals.yahooanswers.YahooAnswerCandidateGenerator
 import io.finch._
 import org.joda.time.DateTime
@@ -32,6 +34,15 @@ object MainApi extends TwitterServer with LazyLogging {
 
   val api: Service[Request, Response] =(getEndpoint :+: postEndpoint).toService
 
+  // List of query generators.
+  val featureGenerator = new MergeFeatures(
+    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures, new MatchesFeatures
+  )
+
+  // Candidate answer ranking module.
+  val ranker = RanklibModelRanker.create(cfg.getString("qa.rank.model"),
+    featureGenerator, cfg.getString("qa.rank.alphabet"))
+
   // Question answering module.
   val questionAnswerer = getQuestionAnswerer
 
@@ -39,13 +50,13 @@ object MainApi extends TwitterServer with LazyLogging {
     if (cfg.getBoolean("qa.crowd.enabled"))
       new CrowdQuestionAnswerer(
         new MergingCandidateGenerator(
-          new YahooAnswerCandidateGenerator //,new WebSearchCandidateGenerator)
-        ), new ScoringBasedRanking(new TermOverlapAnswerScorer))
+          new YahooAnswerCandidateGenerator, new WebSearchCandidateGenerator)
+        , ranker)
     else
       new TextQuestionAnswerer(
         new MergingCandidateGenerator(
-          new YahooAnswerCandidateGenerator //,new WebSearchCandidateGenerator
-        ), new ScoringBasedRanking(new TermOverlapAnswerScorer)
+          new YahooAnswerCandidateGenerator, new WebSearchCandidateGenerator
+        ), ranker
       )
   }
 
