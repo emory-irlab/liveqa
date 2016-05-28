@@ -36,6 +36,9 @@ object AnswerCandidate {
   case object YAHOO_ANSWERS extends AnswerType
   case object ANSWERS_COM extends AnswerType
   case object WEB extends AnswerType
+  case object WEBMD extends AnswerType
+  case object EHOW extends AnswerType
+  case object WIKIHOW extends AnswerType
 
   trait CandidateAttribute
   case object QuestionTitle extends CandidateAttribute

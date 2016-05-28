@@ -16,9 +16,10 @@ import org.apache.tika.sax.BodyContentHandler
 object ContentExtractor {
   val cfg = ConfigFactory.load()
   val contentMinLength = cfg.getInt("qa.web_minimum_candidate_length")
+  val maxDocumentLength = cfg.getInt("qa.max_document_length_to_parse")
 
   def apply(htmlCode: String): Seq[String] = {
-    val textHandler = new BoilerpipeContentHandler(new BodyContentHandler())
+    val textHandler = new BoilerpipeContentHandler(new BodyContentHandler(maxDocumentLength))
     val metadata = new Metadata()
     val parser = new AutoDetectParser()
     val context = new ParseContext()

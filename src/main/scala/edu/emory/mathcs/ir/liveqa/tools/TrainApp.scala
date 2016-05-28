@@ -9,6 +9,7 @@ import scala.pickling.binary._
 import collection.JavaConverters._
 import ciir.umass.edu.learning.{DataPoint, RANKER_TYPE, RankerTrainer}
 import ciir.umass.edu.metric.NDCGScorer
+import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, Question}
 import edu.emory.mathcs.ir.liveqa.parsing.QrelParser
 import edu.emory.mathcs.ir.liveqa.ranking.ranklib.Converter
 import edu.emory.mathcs.ir.liveqa.scoring.features._
@@ -18,7 +19,12 @@ import edu.emory.mathcs.ir.liveqa.scoring.features._
   */
 object TrainApp extends App {
   val qrels = QrelParser(scala.io.Source.fromFile(args(0)))
+  serializeQrels(qrels, args(0) + ".bin")
   val qrelsVal = QrelParser(scala.io.Source.fromFile(args(1)))
+  serializeQrels(qrelsVal, args(1) + ".bin")
+  val qrelsTest = QrelParser(scala.io.Source.fromFile(args(2)))
+  serializeQrels(qrelsTest, args(2) + ".bin")
+
   val alphabet: collection.mutable.Map[String, Int] = new collection.mutable.HashMap[String, Int]
 
   val featureGenerator = new MergeFeatures(
@@ -41,8 +47,16 @@ object TrainApp extends App {
 
   val ranker = trainer.train(RANKER_TYPE.LAMBDAMART, samples.asJava, samplesValidation.asJava, features, new NDCGScorer)
 
-  ranker.save(args(2))
-  val alphabetStream = new FileOutputStream(args(3))
+  ranker.save(args(3))
+  val alphabetStream = new FileOutputStream(args(4))
   alphabet.pickleTo(alphabetStream)
   alphabetStream.close()
+
+
+  def serializeQrels(qrel: Seq[(Question, Seq[AnswerCandidate])], file: String): Unit = {
+    val stream = new FileOutputStream(file)
+    qrel.pickleTo(stream)
+    stream.close()
+  }
+
 }
