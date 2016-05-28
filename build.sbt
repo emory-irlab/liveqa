@@ -4,8 +4,8 @@ version := "1.0"
 
 scalaVersion := "2.11.8"
 
-resolvers += "twttr" at "https://maven.twttr.com/"
-resolvers += "jboss" at "http://repository.jboss.org/nexus/content/groups/public-jboss/"
+resolvers ++= Seq("twttr" at "https://maven.twttr.com/",
+  "jboss" at "http://repository.jboss.org/nexus/content/groups/public-jboss/")
 
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "1.0.3",

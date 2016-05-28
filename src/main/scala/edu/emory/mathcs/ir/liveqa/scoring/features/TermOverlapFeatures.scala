@@ -1,8 +1,10 @@
 package edu.emory.mathcs.ir.liveqa.scoring.features
 
+import edu.stanford.nlp.simple.Document
+
 import collection.JavaConverters._
 import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, Question}
-import edu.emory.mathcs.ir.liveqa.util.Stopwords
+import edu.emory.mathcs.ir.liveqa.util.{NlpUtils, Stopwords}
 
 /**
   * Created by dsavenk on 5/27/16.
@@ -16,12 +18,12 @@ class TermOverlapFeatures extends FeatureCalculation {
     * @return A map from feature names to the corresponding values.
     */
   override def computeFeatures(question: Question, answer: AnswerCandidate): Map[String, Float] = {
-    val titleTerms = question.titleNlp.sentences().asScala.flatMap(s => s.lemmas.asScala).toSet
-    val titleBigrams = question.titleNlp.sentences().asScala.flatMap(s => s.lemmas.asScala).sliding(2).map(_.toList.mkString("-")).toSet
-    val bodyTerms = question.bodyNlp.sentences().asScala.flatMap(s => s.lemmas.asScala).toSet
-    val bodyBigrams = question.bodyNlp.sentences().asScala.flatMap(s => s.lemmas.asScala).sliding(2).map(_.toList.mkString("-")).toSet
-    val answerTerms = answer.textNlp.sentences().asScala.flatMap(s => s.lemmas.asScala).toSet
-    val answerBigrams = answer.textNlp.sentences().asScala.flatMap(s => s.lemmas.asScala).sliding(2).map(_.toList.mkString("-")).toSet
+    val titleTerms = NlpUtils.getLemmas(question.titleNlp).toSet
+    val titleBigrams = NlpUtils.getLemmas(question.titleNlp).sliding(2).map(_.toList.mkString("-")).toSet
+    val bodyTerms = NlpUtils.getLemmas(question.bodyNlp).toSet
+    val bodyBigrams = NlpUtils.getLemmas(question.bodyNlp).sliding(2).map(_.toList.mkString("-")).toSet
+    val answerTerms = NlpUtils.getLemmas(answer.textNlp).toSet
+    val answerBigrams = NlpUtils.getLemmas(answer.textNlp).sliding(2).map(_.toList.mkString("-")).toSet
 
     Map(
       "TitleAnswerOverlap" -> titleTerms.intersect(answerTerms).size,
