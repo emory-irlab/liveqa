@@ -7,7 +7,7 @@ import edu.emory.mathcs.ir.liveqa.ranking.ranklib.Converter
 import edu.emory.mathcs.ir.liveqa.scoring.features.FeatureCalculation
 
 import scala.pickling.Defaults._
-import scala.pickling.binary.{BinaryPickle, _}
+import scala.pickling.binary._
 
 /**
   * Created by dsavenk on 5/27/16.

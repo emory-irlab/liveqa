@@ -1,5 +1,6 @@
 package edu.emory.mathcs.ir.liveqa.scoring.features
 
+import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.{QuestionBody, QuestionTitle}
 import edu.stanford.nlp.simple.Document
 
 import collection.JavaConverters._
@@ -18,20 +19,37 @@ class TermOverlapFeatures extends FeatureCalculation {
     * @return A map from feature names to the corresponding values.
     */
   override def computeFeatures(question: Question, answer: AnswerCandidate): Map[String, Float] = {
-    val titleTerms = NlpUtils.getLemmas(question.titleNlp).toSet
-    val titleBigrams = NlpUtils.getLemmas(question.titleNlp).sliding(2).map(_.toList.mkString("-")).toSet
-    val bodyTerms = NlpUtils.getLemmas(question.bodyNlp).toSet
-    val bodyBigrams = NlpUtils.getLemmas(question.bodyNlp).sliding(2).map(_.toList.mkString("-")).toSet
-    val answerTerms = NlpUtils.getLemmas(answer.textNlp).toSet
-    val answerBigrams = NlpUtils.getLemmas(answer.textNlp).sliding(2).map(_.toList.mkString("-")).toSet
+    var feats = getOverlapFeatures(question.titleNlp, answer.textNlp, "TitleAnswer") ++
+    getOverlapFeatures(question.bodyNlp, answer.textNlp, "BodyAnswer")
 
-    Map(
-      "TitleAnswerOverlap" -> titleTerms.intersect(answerTerms).size,
-      "BodyAnswerOverlap" -> bodyTerms.intersect(answerTerms).size,
-      "TitleAnswerOverlapNoStop" -> titleTerms.intersect(answerTerms.filter(Stopwords.not)).size,
-      "BodyAnswerOverlapNoStop" -> bodyTerms.intersect(answerTerms.filter(Stopwords.not)).size,
-      "TitleAnswerOverlapBigram" -> titleBigrams.intersect(answerBigrams).size,
-      "BodyAnswerOverlapBigram" -> bodyBigrams.intersect(answerBigrams).size
-    )
+    if (answer.attributes.contains(QuestionTitle)) {
+      feats ++= getOverlapFeatures(question.titleNlp, answer.getAttributeNlp(QuestionTitle).get, "TitleQTAnswer")
+      feats ++= getOverlapFeatures(question.bodyNlp, answer.getAttributeNlp(QuestionTitle).get, "BodyQTAnswer")
+    }
+    if (answer.attributes.contains(QuestionBody)) {
+      feats ++= getOverlapFeatures(question.titleNlp, answer.getAttributeNlp(QuestionBody).get, "TitleQTBody")
+      feats ++= getOverlapFeatures(question.bodyNlp, answer.getAttributeNlp(QuestionBody).get, "BodyQTBody")
+    }
+
+    feats
   }
+
+  def getNgrams(doc: Document, n: Int, withStopwords: Boolean): Set[String] = {
+      NlpUtils.getLemmas(doc).filter(withStopwords || Stopwords.not(_))
+        .sliding(n).map(_.toList.mkString("-")).toSet
+  }
+
+  def getOverlapFeatures(questionDocument: Document,
+                         answerDocument: Document,
+                         suffix: String,
+                         n: Int = 3): Map[String, Float] = {
+    for (i <- n; withStop <- Array(true, false)) {
+      val questionNgrams = getNgrams(questionDocument, i, withStop)
+      val answerNgrams = getNgrams(questionDocument, i, withStop)
+      val withStopStr = if (withStop) "" else "NoStop"
+
+      i + "-gramOverlap" + withStopStr + suffix -> questionNgrams.intersect(answerNgrams).size
+    }
+  }
+
 }

@@ -1,10 +1,14 @@
 package edu.emory.mathcs.ir.liveqa.tools
 
+import scala.pickling.Defaults._
+import scala.pickling.binary._
 import ciir.umass.edu.learning.RankerFactory
+import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, Question}
 import edu.emory.mathcs.ir.liveqa.parsing.QrelParser
 import edu.emory.mathcs.ir.liveqa.ranking._
 import edu.emory.mathcs.ir.liveqa.scoring.TermOverlapAnswerScorer
 import edu.emory.mathcs.ir.liveqa.scoring.features._
+import edu.emory.mathcs.ir.liveqa.util.HtmlScraper
 
 import scala.pickling.Defaults._
 import scala.pickling.binary._
@@ -15,6 +19,7 @@ import scala.util.Random
   */
 object EvalApp extends App {
   val qrels = QrelParser(scala.io.Source.fromFile(args(0)))
+
   val map = new AverageRankingMetric(new AveragePrecision(10))
   val ndcg = new AverageRankingMetric(new Ndcg(10))
   val p1 = new AverageRankingMetric(new PrecisionAtK(1))
@@ -43,4 +48,6 @@ object EvalApp extends App {
     println("NDCG@10 = " + ndcg.compute(rankedQrels))
     println("---------------------------------------")
   }
+
+  HtmlScraper.shutdown()
 }
