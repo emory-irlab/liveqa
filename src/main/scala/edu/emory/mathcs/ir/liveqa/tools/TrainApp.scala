@@ -13,6 +13,7 @@ import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, Question}
 import edu.emory.mathcs.ir.liveqa.parsing.QrelParser
 import edu.emory.mathcs.ir.liveqa.ranking.ranklib.Converter
 import edu.emory.mathcs.ir.liveqa.scoring.features._
+import edu.emory.mathcs.ir.liveqa.util.HtmlScraper
 
 /**
   * An app to evaluate answer ranker.
@@ -48,6 +49,7 @@ object TrainApp extends App {
   alphabet.pickleTo(alphabetStream)
   alphabetStream.close()
 
+  HtmlScraper.shutdown()
 
   def serializeQrels(qrel: Seq[(Question, Seq[AnswerCandidate])], file: String): Unit = {
     val stream = new FileOutputStream(file)

@@ -43,13 +43,11 @@ class TermOverlapFeatures extends FeatureCalculation {
                          answerDocument: Document,
                          suffix: String,
                          n: Int = 3): Map[String, Float] = {
-    for (i <- n; withStop <- Array(true, false)) {
+    (1 to n).flatMap(i => Array(true, false).map { withStop =>
       val questionNgrams = getNgrams(questionDocument, i, withStop)
       val answerNgrams = getNgrams(questionDocument, i, withStop)
       val withStopStr = if (withStop) "" else "NoStop"
-
-      i + "-gramOverlap" + withStopStr + suffix -> questionNgrams.intersect(answerNgrams).size
-    }
+      i + "-gramOverlap" + withStopStr + suffix -> questionNgrams.intersect(answerNgrams).size.toFloat
+    }).toMap
   }
-
 }
