@@ -35,8 +35,8 @@ case class YahooAnswersQuestion(qid: String, categories: Array[String],
   * get the question data from Yahoo! Answers given its qid.
   */
 object YahooAnswersQuestion extends LazyLogging {
-  val YahooAnswerSearchBaseUrl = "answers.yahoo.com:443"
-  val YahooAnswerSearchUrl = "https://answers.yahoo.com/question/index"
+  val YahooAnswerBaseUrl = "answers.yahoo.com:443"
+  val YahooAnswerUrl = "https://answers.yahoo.com/question/index"
 
   implicit val timer = DefaultTimer.twitter
   private val cfg = ConfigFactory.load()
@@ -74,7 +74,7 @@ object YahooAnswersQuestion extends LazyLogging {
     */
   def url(qid: String): String = {
     http.Request.queryString(
-      YahooAnswerSearchUrl, Map("qid" -> qid))
+      YahooAnswerUrl, Map("qid" -> qid))
   }
 
   /**

@@ -19,17 +19,20 @@ import edu.emory.mathcs.ir.liveqa.util.HtmlScraper
   * An app to evaluate answer ranker.
   */
 object TrainApp extends App {
-  val qrels = QrelParser(scala.io.Source.fromFile(args(0)))
-  val qrelsVal = QrelParser(scala.io.Source.fromFile(args(1)))
+  val parser = new QrelParser(args(0))
+  val qrels = parser(scala.io.Source.fromFile(args(1)))
+  val qrelsVal = parser(scala.io.Source.fromFile(args(2)))
 
   val alphabet: collection.mutable.Map[String, Int] = new collection.mutable.HashMap[String, Int]
 
   val featureGenerator = new MergeFeatures(
-    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures, new MatchesFeatures
+    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures, new MatchesFeatures, new SourceFeatures
   )
   qrels.foreach {
     case (question, candidates) =>
-      candidates.foreach(c => featureGenerator.computeFeatures(question, c).map(e => c.features += e))
+      candidates.foreach(c => featureGenerator
+        .computeFeatures(question, c)
+        .map(e => c.features += e))
   }
   qrelsVal.foreach {
     case (question, candidates) =>

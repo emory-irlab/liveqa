@@ -18,7 +18,8 @@ import scala.util.Random
   * An app to evaluate answer ranker.
   */
 object EvalApp extends App {
-  val qrels = QrelParser(scala.io.Source.fromFile(args(0)))
+  val parser = new QrelParser(args(0))
+  val qrels = parser(scala.io.Source.fromFile(args(1)))
 
   val map = new AverageRankingMetric(new AveragePrecision(10))
   val ndcg = new AverageRankingMetric(new Ndcg(10))
@@ -26,7 +27,7 @@ object EvalApp extends App {
   val p10 = new AverageRankingMetric(new PrecisionAtK(10))
 
   val featureGenerator = new MergeFeatures(
-    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures, new MatchesFeatures
+    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures, new MatchesFeatures, new SourceFeatures
   )
 
   val rankers = Array(new DummyRanking,
@@ -34,7 +35,7 @@ object EvalApp extends App {
     new RandomRanking(12345),
     new RelevanceRanking,
     new ScoringBasedRanking(new TermOverlapAnswerScorer),
-    RanklibModelRanker.create(args(1), featureGenerator, args(2)))
+    RanklibModelRanker.create(args(2), featureGenerator, args(3)))
 
   for (ranker <- rankers) {
     val rankedQrels = qrels.map {

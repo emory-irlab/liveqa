@@ -14,7 +14,9 @@ import edu.emory.mathcs.ir.liveqa.ranking.{RanklibModelRanker, ScoringBasedRanki
 import edu.emory.mathcs.ir.liveqa.scoring.TermOverlapAnswerScorer
 import edu.emory.mathcs.ir.liveqa.scoring.features._
 import edu.emory.mathcs.ir.liveqa.util.LogFormatter
+import edu.emory.mathcs.ir.liveqa.verticals.answerscom.AnswersComCandidateGenerator
 import edu.emory.mathcs.ir.liveqa.verticals.web.WebSearchCandidateGenerator
+import edu.emory.mathcs.ir.liveqa.verticals.wikihow.WikiHowCandidateGenerator
 import edu.emory.mathcs.ir.liveqa.verticals.yahooanswers.YahooAnswerCandidateGenerator
 import io.finch._
 import org.joda.time.DateTime
@@ -36,7 +38,7 @@ object MainApi extends TwitterServer with LazyLogging {
 
   // List of query generators.
   val featureGenerator = new MergeFeatures(
-    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures, new MatchesFeatures
+    new Bm25Features, new AnswerStatsFeatures, new TermOverlapFeatures, new MatchesFeatures, new SourceFeatures
   )
 
   // Candidate answer ranking module.
@@ -50,12 +52,18 @@ object MainApi extends TwitterServer with LazyLogging {
     if (cfg.getBoolean("qa.crowd.enabled"))
       new CrowdQuestionAnswerer(
         new MergingCandidateGenerator(
-          new YahooAnswerCandidateGenerator, new WebSearchCandidateGenerator)
+          new YahooAnswerCandidateGenerator,
+          new AnswersComCandidateGenerator,
+          new WikiHowCandidateGenerator,
+          new WebSearchCandidateGenerator)
         , ranker)
     else
       new TextQuestionAnswerer(
         new MergingCandidateGenerator(
-          new YahooAnswerCandidateGenerator, new WebSearchCandidateGenerator
+          new YahooAnswerCandidateGenerator,
+          new AnswersComCandidateGenerator,
+          new WikiHowCandidateGenerator,
+          new WebSearchCandidateGenerator
         ), ranker
       )
   }

@@ -1,51 +1,47 @@
-package edu.emory.mathcs.ir.liveqa.verticals.answerscom
+package edu.emory.mathcs.ir.liveqa.verticals.wikihow
 
 import java.util.concurrent.TimeUnit
 
-import com.twitter.finagle.http
 import com.twitter.finagle.util.DefaultTimer
 import com.twitter.util.{Duration, Future}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.util.{HtmlScraper, LogFormatter}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
-import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
+import net.ruippeixotog.scalascraper.dsl.DSL._
 
 /**
   * A question and answers from Yahoo! Answers.
   *
-  * @param Url Url of the question.
+  * @param url Url of the question
   * @param categories The categories of the question
   * @param title The title of the question
   * @param body The body of the question
-  * @param answer Answer to the question.
+  * @param answer The list of answers
   */
-case class AnswersComQuestion(url: String, categories: Array[String],
-                              title: String, body: String,
-                              answer: String)
+case class WikiHowQuestion(url: String, categories: Array[String],
+                           title: String, body: String,
+                           answer: String)
 
 /**
   * Companion object for YahooAnswersQuestion class, it has a factory method to
   * get the question data from Yahoo! Answers given its qid.
   */
-object AnswersComQuestion extends LazyLogging {
-  val AnswersComBaseUrl = "wiki.answers.com:80"
-  val AnswersComUrl = "https://answers.yahoo.com/question/index"
-
+object WikiHowQuestion extends LazyLogging {
   implicit val timer = DefaultTimer.twitter
   private val cfg = ConfigFactory.load()
 
   /**
     * Scrapes the data for the Yahoo! Answers question with the provided qid.
     *
-    * @param url Url of the question.
-    * @return A future, that might contain [[AnswersComQuestion]] object with
+    * @param url URL of question.
+    * @return A future, that might contain [[WikiHowQuestion]] object with
     *         the data for the provided Qid. If request fails it will be None.
     */
-  def apply(url: String) : Future[Option[AnswersComQuestion]] = {
+  def apply(url: String) : Future[Option[WikiHowQuestion]] = {
     // Request the page with the question from Yahoo! Answers and parse it.
-    val qna = HtmlScraper(url) //client(request)
+    val qna = HtmlScraper(if (!url.startsWith("http")) "http:" + url else url)
       .within(Duration(cfg.getInt("request.timeout"), TimeUnit.SECONDS))
       .map(contentOption => contentOption.map(parse(url, _)))
       .rescue {
@@ -61,19 +57,18 @@ object AnswersComQuestion extends LazyLogging {
 
   /**
     * Parses the HTML code of the Yahoo! Answers question web page and returns
-    * [[AnswersComQuestion]] object with the corresponding data.
+    * [[WikiHowQuestion]] object with the corresponding data.
     *
     * @param pageHtml Html code of the question page.
-    * @return [[AnswersComQuestion]] instance for the given question.
+    * @return [[WikiHowQuestion]] instance for the given question.
     */
-  private def parse(url: String, pageHtml: String): AnswersComQuestion = {
+  private def parse(url: String, pageHtml: String): WikiHowQuestion = {
     val browser = JsoupBrowser()
     val document = browser.parseString(pageHtml)
-    val categories = document >> texts("div.category a.category_name")
-    val title = document >> text("span.title_text")
-    val answer = document >> text("div.answer_text")
+    val categories = document >> texts("ul#breadcrumb li")
+    val title = document >> text("h1")
+    val answer = (document >> texts("#intro p")).mkString("\n")
 
-    // TODO(denxx): Extract additional answer metainformation, e.g. votes.
-    new AnswersComQuestion(url, categories.toArray, title, "", answer)
+    new WikiHowQuestion(url, categories.toArray, title, "", answer)
   }
 }

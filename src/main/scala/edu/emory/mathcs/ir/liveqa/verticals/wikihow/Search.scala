@@ -1,19 +1,16 @@
-package edu.emory.mathcs.ir.liveqa.verticals.answerscom
+package edu.emory.mathcs.ir.liveqa.verticals.wikihow
 
-import com.twitter.finagle.{Http, http}
-import com.twitter.finagle.util.DefaultTimer
-import com.twitter.util.{Await, Duration, Future, TimeoutException}
-import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
+import com.twitter.finagle.http
+import com.twitter.finagle.util.DefaultTimer
+import com.twitter.util.{Await, Duration, Future, TimeoutException}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import edu.emory.mathcs.ir.liveqa.base.Question
 import edu.emory.mathcs.ir.liveqa.util.{HtmlScraper, LogFormatter}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
-import net.ruippeixotog.scalascraper.model.Element
 
 /**
   * Searches Answers.com for related questions using its own search
@@ -21,8 +18,8 @@ import net.ruippeixotog.scalascraper.model.Element
   */
 object Search extends LazyLogging {
   val resultsPageDocCount = 10
-  val answersComSearchBaseUrl = "www.answers.com:80"
-  val answersComSearchUrl = "http://www.answers.com/Q/"
+  val ehowSearchBaseUrl = "www.wikihow.com:80"
+  val ehowSearchUrl = "http://www.wikihow.com/wikiHowTo"
   private val cfg = ConfigFactory.load()
   implicit val timer = DefaultTimer.twitter
 
@@ -33,8 +30,11 @@ object Search extends LazyLogging {
     * @return A Future of search results list.
     */
   def apply(query: String, topN: Int)
-  : Future[Seq[Option[AnswersComQuestion]]] = {
-      Future.collect(Seq(getSearchPage(query)))
+  : Future[Seq[Option[WikiHowQuestion]]] = {
+    Future.collect(
+      (1 to (topN + resultsPageDocCount - 1) / resultsPageDocCount)
+        .map(page => getSearchPage(query, page))
+    )
       .map(pages => pages.flatten)
       .map(pages => pages.take(topN))
   }
@@ -46,9 +46,10 @@ object Search extends LazyLogging {
     * @param query The search query.
     * @return A Future of search results from the given page.
     */
-  private def getSearchPage(query: String):
-  Future[Seq[Option[AnswersComQuestion]]] = {
-    val searchUrl = answersComSearchUrl + URLEncoder.encode(query, "UTF-8")
+  private def getSearchPage(query: String, page: Int):
+  Future[Seq[Option[WikiHowQuestion]]] = {
+    val searchUrl = http.Request.queryString(ehowSearchUrl,
+      Map("search" -> query, "start" -> (page * 10).toString))
 
     // Make a request with 1 second time limit.
     val answers = HtmlScraper(searchUrl)
@@ -57,9 +58,9 @@ object Search extends LazyLogging {
         content =>
           Future.collect(
             if (content.isDefined)
-              parse(content.get).map(AnswersComQuestion(_))
+              parse(content.get).map(WikiHowQuestion(_))
             else
-              Array.empty[Future[Option[AnswersComQuestion]]])
+              Array.empty[Future[Option[WikiHowQuestion]]])
       } rescue {
       case exc: TimeoutException =>
         logger.error(LogFormatter("SEARCH_REQUEST_EXCEPTION",
@@ -80,10 +81,6 @@ object Search extends LazyLogging {
   private def parse(searchHtml: String) : Array[String] = {
     val browser = JsoupBrowser()
     val document = browser.parseString(searchHtml)
-    val articles = document >> elementList("article.frame")
-    articles
-      .map(answer => answer >> attr("href")("h1 a"))
-      .filter(!_.contains("/article/"))
-      .toArray
+    (document >> attrs("href")("a.result_link")).toArray
   }
 }

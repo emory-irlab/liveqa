@@ -55,7 +55,7 @@ class YahooAnswerCandidateGenerator
             questionAnswers.categories.headOption.getOrElse("")
           candidate.attributes(AnswerCandidate.QuestionCategories) =
             questionAnswers.categories.mkString("\t")
-          candidate.attributes(AnswerCandidate.QuestionCategories) =
+          candidate.attributes(AnswerCandidate.QuestionId) =
             questionAnswers.qid
 
           // Return the answer.
