@@ -86,9 +86,9 @@ class CrowdQuestionAnswerer(candidateGenerator: CandidateGeneration,
         // worker answer.
         if (sortedByRating.head.attributes.get(CrowdRating).get.toDouble >= 2
           || crowdAnswers.isEmpty) {
-          new Answer(sortedByRating.head.text, Array(sortedByRating.head.source))
+          new Answer(question.qid, sortedByRating.head.text, Array(sortedByRating.head.source))
         } else {
-          new Answer(crowdAnswers.sortBy(a => a.text.length).reverse.head.text,
+          new Answer(question.qid, crowdAnswers.sortBy(a => a.text.length).reverse.head.text,
             Array("Crowdsourcing"))
         }
     }

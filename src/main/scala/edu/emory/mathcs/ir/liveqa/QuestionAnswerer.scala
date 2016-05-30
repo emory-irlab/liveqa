@@ -114,7 +114,7 @@ class TextQuestionAnswerer(candidateGenerator: CandidateGeneration,
     * @return The final response of the question answering system.
     */
   override def generateAnswer(question: Question, rankedCandidates: Seq[AnswerCandidate]): Answer = {
-      if (rankedCandidates.isEmpty) new Answer("NA", Array())
-      else new Answer(rankedCandidates.head.text, Array(rankedCandidates.head.source))
+      if (rankedCandidates.isEmpty) new Answer(question.qid, "NA", Array(""))
+      else new Answer(question.qid, rankedCandidates.head.text, Array(rankedCandidates.head.source))
   }
 }

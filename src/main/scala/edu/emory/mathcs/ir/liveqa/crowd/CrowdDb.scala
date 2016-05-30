@@ -13,6 +13,7 @@ import slick.driver.SQLiteDriver.api._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import scala.util.Random
 
 /**
   * Database for the interaction with the crowdsourcing module.
@@ -83,16 +84,30 @@ object CrowdDb extends LazyLogging {
   }
   val answers = TableQuery[Answers]
 
+  class AnswersReceived(tag: Tag) extends Table[(Int, String, String, DateTime, Boolean)](tag, "ANSWERS_RECEIVED") {
+    def id = column[Int]("ID", O.PrimaryKey, O.AutoInc)
+    def qid = column[String]("QID")
+    def worker = column[String]("WORKER")
+    def time = column[DateTime]("TIME")
+    def shuffled = column[Boolean]("SHUFFLED")
+
+    def * = (id, qid, worker, time, shuffled)
+    // Foreign key to link answers to the questions.
+    def questionId = foreignKey("QUESTION_FK", qid, questions)(_.qid)
+  }
+  val answersReceived = TableQuery[AnswersReceived]
+
   /**
     * Class defining the structure of the answer rating table.
     */
-  class AnswerRatings(tag: Tag) extends Table[(Int, Int, Int, String)](tag, "RATINGS") {
+  class AnswerRatings(tag: Tag) extends Table[(Int, Int, Int, String, DateTime)](tag, "RATINGS") {
     def id = column[Int]("ID", O.PrimaryKey, O.AutoInc)
     def aid = column[Int]("AID")
     def rating = column[Int]("RATING")
     def worker = column[String]("WORKER")
+    def time = column[DateTime]("TIME")
 
-    def * = (id, aid, rating, worker)
+    def * = (id, aid, rating, worker, time)
     // Foreign key to the answers table.
     def answerId = foreignKey("ANSWER_FK", aid, answers)(_.id)
   }
@@ -102,7 +117,7 @@ object CrowdDb extends LazyLogging {
     * Creates required databases.
     */
   def createDb(): Unit = {
-    val setup = (workers.schema ++ questions.schema ++
+    val setup = (workers.schema ++ questions.schema ++ answersReceived.schema ++
       answers.schema ++ ratings.schema).create
 
     val setupFuture = db.run(setup)
@@ -249,6 +264,18 @@ object CrowdDb extends LazyLogging {
     * @return A list of answers, not rated by the current worker.
     */
   def getAnswers(qid: String, worker: String): Seq[Answer] = {
+    val res = Await.result(
+      db.run(answersReceived.filter(ar => (ar.qid === qid) && (ar.worker === worker)).result),
+      Duration.Inf)
+    val shuffle =
+      if (res.isEmpty) {
+        val sh = Random.nextBoolean()
+        db.run(answersReceived += (0, qid, worker, DateTime.now, sh))
+        sh
+      } else {
+        res.head._5
+      }
+
     val answerRatingsQuery = answers
       .filter(a => (a.qid === qid) && (a.worker =!= worker))
       .joinLeft(ratings.filter(_.worker === worker)) on (_.id === _.aid)
@@ -258,8 +285,12 @@ object CrowdDb extends LazyLogging {
       case e: Exception => logger.error(e.getMessage)
     }
     val answerRatings = Await.result(futureQuery, Duration.Inf)
-    answerRatings.filterNot(_._2.isDefined)
-      .map(a => new Answer(a._1._1, a._1._3, Array(a._1._4)))
+    val results = answerRatings.filterNot(_._2.isDefined)
+      .map(a => new Answer(a._1._1, qid, a._1._3, Array(a._1._4)))
+    if (shuffle)
+      Random.shuffle(results)
+    else
+      results
   }
 
   /**
@@ -270,7 +301,7 @@ object CrowdDb extends LazyLogging {
     * @param rating The rating of the answer.
     */
   def rateAnswer(aid: Int, worker: String, rating: Int): Future[_] = {
-    val queryFuture = db.run(ratings += (0, aid, rating, worker))
+    val queryFuture = db.run(ratings += (0, aid, rating, worker, DateTime.now))
     queryFuture onFailure {
       case e: Exception => logger.error(e.getMessage)
     }

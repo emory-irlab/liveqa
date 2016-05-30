@@ -64,11 +64,14 @@ object MainApi extends TwitterServer with LazyLogging {
     FuturePool.unboundedPool {
       Stat.time(answerLatency) {
         // Log the question.
+        val answerReceivedTime = DateTime.now.toInstant.getMillis
+
         logger.info(LogFormatter("QUESTION", Array(qid, title, body.getOrElse(""))))
         val question = new Question(qid, category, title, body, DateTime.now)
 
         // Generate the answer.
         val answer = questionAnswerer.answer(question)
+        answer.time = DateTime.now.toInstant.getMillis - answerReceivedTime
 
         // Log and return the answer.
         logger.info(LogFormatter("ANSWER", Array(answer.answer, answer.sources.headOption.getOrElse("No sources"))))
