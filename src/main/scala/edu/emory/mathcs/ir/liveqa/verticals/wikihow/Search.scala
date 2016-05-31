@@ -82,7 +82,7 @@ object Search extends LazyLogging {
     val browser = JsoupBrowser()
     try {
       val document = browser.parseString(searchHtml)
-      (document >> attrs("href")("a.result_link")).toArray
+      (document >> attrs("href")("a.result_link")).toSet.toArray
     } catch {
       case exc: Exception =>
         logger.error(exc.getMessage)

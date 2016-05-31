@@ -93,7 +93,7 @@ object Search extends LazyLogging {
       //document >> element("#yan-questions") >> elementList("li")
       (document >> attrs("href")(".searchCenterMiddle li a"))
         .filter(_.contains("qid="))
-        .map(href => href.split("qid=")(1))
+        .map(href => href.split("qid=")(1)).toSet
         .toArray
     } catch {
       case exc: Exception =>
