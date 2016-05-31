@@ -9,8 +9,8 @@ import ciir.umass.edu.learning.tree.LambdaMART;
 public abstract class DataPointEx extends DataPoint {
     static {
         LambdaMART.nRoundToStopEarly = 1000;
-        LambdaMART.nTrees = 500;
-        LambdaMART.learningRate = 0.1f;
+        LambdaMART.nTrees = 1000;
+        LambdaMART.learningRate = 0.05f;
     }
     public void setFeatureCount(int val) {
         DataPoint.featureCount = val;
