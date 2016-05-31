@@ -55,5 +55,6 @@ class WebSearchCandidateGenerator(queryGenerator: QueryGeneration)
           .map(_.flatten)  // We first collect futures, and then flatten nested
                            // sequences.
     }).map(_.flatten)
+      .map(candidates => candidates.map(c => c.text -> c).toMap.values.toSeq)
   }
 }

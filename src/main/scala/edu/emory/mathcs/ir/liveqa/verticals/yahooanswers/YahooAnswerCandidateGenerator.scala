@@ -26,6 +26,7 @@ class YahooAnswerCandidateGenerator(queryGenerator: QueryGeneration)
       }
     }
     results.map(futureResults => futureResults.flatten)
+      .map(candidates => candidates.map(c => c.text -> c).toMap.values.toSeq)
   }
 
   private def createCandidates(questionAnswers: YahooAnswersQuestion)

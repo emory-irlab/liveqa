@@ -23,6 +23,7 @@ class WikiHowCandidateGenerator(queryGenerator: QueryGeneration) extends Candida
       }
     }
     results.map(futureResults => futureResults.flatten)
+      .map(candidates => candidates.map(c => c.text -> c).toMap.values.toSeq)
   }
 
   private def createCandidates(q: WikiHowQuestion): Seq[AnswerCandidate] = {
