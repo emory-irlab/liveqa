@@ -84,7 +84,7 @@ class CrowdQuestionAnswerer(candidateGenerator: CandidateGeneration,
 
         // Return the top answer if has rating greater than 2, or the longest
         // worker answer.
-        if (sortedByRating.head.attributes.get(CrowdRating).get.toDouble >= 2
+        if (sortedByRating.head.attributes.get(CrowdRating).get.toDouble >= cfg.getInt("qa.crowd.good_rating_threshold")
           || crowdAnswers.isEmpty) {
           new Answer(question.qid, sortedByRating.head.text, Array(sortedByRating.head.source))
         } else {

@@ -47,9 +47,9 @@ object TrainApp extends App {
 
   val ranker = trainer.train(RANKER_TYPE.LAMBDAMART,
     samples.asJava,
-    samplesValidation.asJava,
+//    samplesValidation.asJava,
     features,
-    new ERRScorer())
+    new NDCGScorer)
 
   ranker.save(args(3))
   val alphabetStream = new FileOutputStream(args(4))
