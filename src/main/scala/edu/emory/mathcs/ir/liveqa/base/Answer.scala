@@ -16,6 +16,7 @@ case class Answer(id:Int, qid: String, answer: String, sources: Array[String]) {
 
   /**
     * Alternative constructor, that doesn't take id as a parameter.
+    *
     * @param answer The answer to the question.
     * @param sources The sources used to generate the answer.
     */
@@ -23,19 +24,32 @@ case class Answer(id:Int, qid: String, answer: String, sources: Array[String]) {
 
   /**
     * Encodes the answer in XML format.
+    *
     * @return XML with answer representation. XML format is the one expected in
     *         response from TREC LiveQA organizers.
     */
   def toXml =
-    <xml>
-      <answer pid={Answer.systemName} answered="yes" time={time.toString} qid={qid}>
-        <content>{answer}</content>
-        <resources>{sources}</resources>
-        <title-foci> </title-foci>
-        <body-foci> </body-foci>
-        <summary> </summary>
-      </answer>
-    </xml>
+    if (answer.isEmpty) {
+      <xml>
+        <answer pid={Answer.systemName} answered="no" time={time.toString} qid={qid}>
+          <discard-reason>No candidates</discard-reason>
+        </answer>
+      </xml>
+    } else {
+      <xml>
+        <answer pid={Answer.systemName} answered="yes" time={time.toString} qid={qid}>
+          <content>
+            {answer}
+          </content>
+          <resources>
+            {sources}
+          </resources>
+          <title-foci></title-foci>
+          <body-foci></body-foci>
+          <summary></summary>
+        </answer>
+      </xml>
+    }
 
 }
 
