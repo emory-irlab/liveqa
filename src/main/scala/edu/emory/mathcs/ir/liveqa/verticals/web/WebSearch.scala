@@ -17,7 +17,7 @@ object WebSearch extends LazyLogging {
     for (i <- 1 to keys.size()) {
       try {
         return bing.SearchWeb(query).take(cfg.getInt("qa.web_answers_results"))
-          .map(convert(_))
+          .map(r => r.url -> convert(r)).toMap.values.toSeq
       } catch {
         case exc: java.io.IOException if exc.getMessage.contains("503") =>
           logger.error(exc.getMessage)
