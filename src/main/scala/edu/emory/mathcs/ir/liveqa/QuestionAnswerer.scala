@@ -3,12 +3,10 @@ package edu.emory.mathcs.ir.liveqa
 import java.util.concurrent.TimeUnit
 
 import edu.emory.mathcs.ir.liveqa.base._
-import edu.emory.mathcs.ir.liveqa.verticals.yahooanswers.{Search, YahooAnswerCandidateGenerator}
 import com.twitter.util.{Await, Duration}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.ranking.AnswerRanking
-import edu.emory.mathcs.ir.liveqa.verticals.web.WebSearchCandidateGenerator
 
 /**
   * Main trait for question-answering modules.
