@@ -8,12 +8,13 @@ import CandidateAnswerTextProcessor._
   * A candidate answer, extracted from somewhere on the web.
   */
 class AnswerCandidate(val answerType: AnswerType,
-                      val text: String,
+                      txt: String,
                       val source: String)(implicit textProcessor: CandidateAnswerTextProcessing = AnswerTextMaxlenCutter) {
   val attributes = new scala.collection.mutable.HashMap[CandidateAttribute, String]
   private val attributesNlp = new scala.collection.mutable.HashMap[CandidateAttribute, Document]
   val features = new scala.collection.mutable.HashMap[String, Float]
-  val textNlp = new Document(textProcessor(text))
+  val text = textProcessor(txt)
+  val textNlp = new Document(text)
 
   /**
     * Returns Stanford CoreNLP [[Document]] object for the given attribute.
