@@ -44,9 +44,9 @@ case class Answer(id:Int, qid: String, answer: String, sources: Array[String]) {
           <resources>
             {sources}
           </resources>
-          <title-foci></title-foci>
-          <body-foci></body-foci>
-          <summary></summary>
+          <title-foci> </title-foci>
+          <body-foci> </body-foci>
+          <summary> </summary>
         </answer>
       </xml>
     }
