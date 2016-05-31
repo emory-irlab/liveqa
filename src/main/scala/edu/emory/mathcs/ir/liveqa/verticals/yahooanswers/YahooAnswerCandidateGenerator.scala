@@ -9,23 +9,15 @@ import AnswerCandidate.YAHOO_ANSWERS
   * An object that generates candidates answers for the given question by
   * retrieving related questions using Yahoo! Answers search functionality.
   */
-class YahooAnswerCandidateGenerator
-      extends CandidateGeneration with QueryGeneration {
+class YahooAnswerCandidateGenerator(queryGenerator: QueryGeneration)
+      extends CandidateGeneration {
   private val cfg = ConfigFactory.load()
 
-  /**
-    * Generates search queries for the given question.
-    * @param question A question to generate search queries for.
-    * @return A sequence of search queries to issue to a search engine.
-    */
-  override def getSearchQueries(question: Question) = {
-    Seq(question.title.replaceAll("[^A-Za-z0-9]", " "))
-  }
 
   override def getCandidateAnswers(question: Question)
       : Future[Seq[AnswerCandidate]] = {
     val results = Future collect {
-      getSearchQueries(question) map {
+      queryGenerator.getSearchQueries(question) map {
         Search(_, cfg.getInt("qa.yahoo_answers_results"))
       } map {
         futureResults => futureResults.map(

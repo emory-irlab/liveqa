@@ -8,7 +8,7 @@ import scala.pickling.Defaults._
 import scala.pickling.binary._
 import collection.JavaConverters._
 import ciir.umass.edu.learning.{DataPoint, RANKER_TYPE, RankerTrainer}
-import ciir.umass.edu.metric.NDCGScorer
+import ciir.umass.edu.metric.{ERRScorer, NDCGScorer}
 import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, Question}
 import edu.emory.mathcs.ir.liveqa.parsing.QrelParser
 import edu.emory.mathcs.ir.liveqa.ranking.ranklib.Converter
@@ -45,7 +45,11 @@ object TrainApp extends App {
   val features = Array.fill(DataPoint.getFeatureCount){0}
   for (i <- features.indices) features(i) = i + 1
 
-  val ranker = trainer.train(RANKER_TYPE.LAMBDAMART, samples.asJava, samplesValidation.asJava, features, new NDCGScorer)
+  val ranker = trainer.train(RANKER_TYPE.LAMBDAMART,
+    samples.asJava,
+    samplesValidation.asJava,
+    features,
+    new ERRScorer())
 
   ranker.save(args(3))
   val alphabetStream = new FileOutputStream(args(4))

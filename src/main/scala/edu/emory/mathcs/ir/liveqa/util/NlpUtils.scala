@@ -8,6 +8,9 @@ import edu.stanford.nlp.simple.Document
  */
 object NlpUtils {
   def getLemmas(doc: Document): Seq[String] = {
-    doc.sentences().asScala.flatMap(s => s.lemmas.asScala)
+    doc.sentences().asScala
+      .flatMap(s => s.lemmas.asScala)
+      .map(_.toLowerCase)
+      .filter(_.headOption.getOrElse(' ').isLetterOrDigit)
   }
 }

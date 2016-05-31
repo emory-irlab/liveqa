@@ -8,7 +8,7 @@ import com.twitter.server.TwitterServer
 import com.twitter.util.{Await, FuturePool}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import edu.emory.mathcs.ir.liveqa.base.{Answer, MergingCandidateGenerator, Question}
+import edu.emory.mathcs.ir.liveqa.base._
 import edu.emory.mathcs.ir.liveqa.crowd.{CrowdApi, CrowdQuestionAnswerer}
 import edu.emory.mathcs.ir.liveqa.ranking.{RanklibModelRanker, ScoringBasedRanking}
 import edu.emory.mathcs.ir.liveqa.scoring.TermOverlapAnswerScorer
@@ -45,6 +45,9 @@ object MainApi extends TwitterServer with LazyLogging {
   val ranker = RanklibModelRanker.create(cfg.getString("qa.rank.model"),
     featureGenerator, cfg.getString("qa.rank.alphabet"))
 
+  val queryGenerator = new CombineQueriesGenerator(new TitleQueryGeneration, new Top5IdfQueryGenerator, new LongestQuestionQueryGenerator)
+  val webQueryGenerator = new CombineQueriesGenerator(new TitleQueryGeneration, new Top5IdfQueryGenerator)
+
   // Question answering module.
   val questionAnswerer = getQuestionAnswerer
 
@@ -52,18 +55,18 @@ object MainApi extends TwitterServer with LazyLogging {
     if (cfg.getBoolean("qa.crowd.enabled"))
       new CrowdQuestionAnswerer(
         new MergingCandidateGenerator(
-          new YahooAnswerCandidateGenerator,
-          new AnswersComCandidateGenerator,
-          new WikiHowCandidateGenerator,
-          new WebSearchCandidateGenerator)
+          new YahooAnswerCandidateGenerator(queryGenerator),
+          new AnswersComCandidateGenerator(queryGenerator),
+          new WikiHowCandidateGenerator(queryGenerator),
+          new WebSearchCandidateGenerator(webQueryGenerator))
         , ranker)
     else
       new TextQuestionAnswerer(
         new MergingCandidateGenerator(
-          new YahooAnswerCandidateGenerator,
-          new AnswersComCandidateGenerator,
-          new WikiHowCandidateGenerator,
-          new WebSearchCandidateGenerator
+          new YahooAnswerCandidateGenerator(queryGenerator),
+          new AnswersComCandidateGenerator(queryGenerator),
+          new WikiHowCandidateGenerator(queryGenerator),
+          new WebSearchCandidateGenerator(webQueryGenerator)
         ), ranker
       )
   }

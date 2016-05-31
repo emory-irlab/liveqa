@@ -8,6 +8,7 @@ import com.twitter.util.{Duration, Future}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
 import edu.emory.mathcs.ir.liveqa.util.{HtmlScraper, LogFormatter}
+import edu.emory.mathcs.ir.liveqa.verticals.wikihow.WikiHowQuestion._
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
@@ -53,6 +54,9 @@ object AnswersComQuestion extends LazyLogging {
           logger.error(LogFormatter("REQUEST_TIMEOUT",
             Array(url, exc.toString)))
           // Return empty future.
+          Future.value(None)
+        case exc: Exception =>
+          logger.error(exc.toString)
           Future.value(None)
       }
 

@@ -62,17 +62,19 @@ object Search extends LazyLogging {
       .within(Duration(cfg.getInt("request.timeout"), TimeUnit.SECONDS))
       .flatMap {
         content =>
-          Future.collect(
+          val res = Future.collect(
             if (content.isDefined)
               parse(content.get).map(YahooAnswersQuestion(_))
             else
               Array.empty[Future[Option[YahooAnswersQuestion]]])
-      } rescue {
-        case exc: TimeoutException =>
-          logger.error(LogFormatter("SEARCH_REQUEST_EXCEPTION",
-            Array(searchUrl, exc.toString)))
-          // Return empty future.
-          Future.value(Nil)
+          res rescue {
+            case exc: TimeoutException =>
+              logger.error(LogFormatter("SEARCH_REQUEST_EXCEPTION",
+                Array(searchUrl, exc.toString)))
+              // Return empty future.
+              Future.value(Nil)
+          }
+          res
       }
 
     answers
@@ -86,13 +88,17 @@ object Search extends LazyLogging {
     */
   private def parse(searchHtml: String) : Array[String] = {
     val browser = JsoupBrowser()
-    val document = browser.parseString(searchHtml)
-    val answers: List[Element] =
+    try {
+      val document = browser.parseString(searchHtml)
       //document >> element("#yan-questions") >> elementList("li")
-      document >> element(".searchCenterMiddle") >> elementList("li")
-    answers
-      .map(answer => answer >> attr("href")("h3 a"))
-      .map(href => href.split("qid=")(1))
-      .toArray
+      (document >> attrs("href")(".searchCenterMiddle li a"))
+        .filter(_.contains("qid="))
+        .map(href => href.split("qid=")(1))
+        .toArray
+    } catch {
+      case exc: Exception =>
+        logger.error(exc.getMessage)
+        Array.empty[String]
+    }
   }
 }

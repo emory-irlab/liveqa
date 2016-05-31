@@ -28,12 +28,16 @@ class Bm25Features extends FeatureCalculation {
       answer.getAttributeNlp(QuestionBody)
         .map(d => d.sentences.asScala.toList).getOrElse(Nil)
 
-    Map(
-      "BM25_qtitle_answer" -> BM25Score(question.titleNlp, answer.textNlp),
-      "BM25_qbody_answer" -> BM25Score(question.bodyNlp, answer.textNlp),
-      "BM25_qfull_answer" -> BM25Score(titleAndBody, answer.textNlp.sentences.asScala),
-      "BM25_qfull_answerqtext" -> BM25Score(titleAndBody, answerQTitleSentences ::: answerQBodySentences)
+    val res = Map(
+      "BM25Title-Answer" -> BM25Score(question.titleNlp, answer.textNlp),
+      "BM25Body-Answer" -> BM25Score(question.bodyNlp, answer.textNlp),
+      "BM25Full-Answer" -> BM25Score(titleAndBody, answer.textNlp.sentences.asScala),
+      "BM25Title-AnswerQTitle" -> BM25Score(question.titleNlp.sentences.asScala, answerQTitleSentences),
+      "BM25Title-AnswerQBody" -> BM25Score(question.titleNlp.sentences.asScala, answerQBodySentences),
+      "BM25Title-AnswerQTitleBody" -> BM25Score(question.titleNlp.sentences.asScala, answerQTitleSentences ::: answerQBodySentences),
+      "BM25Full-AnswerQTitleBody" -> BM25Score(titleAndBody, answerQTitleSentences ::: answerQBodySentences)
     )
+    res
   }
 
 
@@ -56,13 +60,19 @@ object BM25Score {
             k1: Float = defaultK1,
             b: Float = defaultB,
             avgL: Float = defaultAvgL) : Float = {
-    val queryTerms = query.flatMap(s => s.lemmas().asScala.filter(Stopwords.not)).toSet
+    val queryTerms = query.flatMap(s => s.lemmas().asScala
+      .map(l => l.toLowerCase())
+      .filter(l => l.headOption.getOrElse(' ').isLetterOrDigit &&
+        Stopwords.not(l))).toSet
     val docTerms = document.flatMap(s => s.lemmas.asScala)
-      .filter(Stopwords.not)
-    val documentTermsCount = docTerms.filter(queryTerms.contains)
+      .map(l => l.toLowerCase())
+      .filter(l => l.headOption.getOrElse(' ').isLetterOrDigit &&
+        Stopwords.not(l))
+    val documentTermsCount = docTerms
+      .filter(queryTerms.contains)
       .groupBy(l => l).map {
-      case (k, v) => (k, v.size)
-    }
+        case (k, v) => (k, v.size)
+      }
 
     val bm25 = documentTermsCount.map { case (term, df) =>
       val denominator = df + k1 * (1 - b + b * (docTerms.size / avgL))

@@ -9,17 +9,8 @@ import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, CandidateGeneration, Qu
   * documents, parse them and select useful passages along with some helpful
   * information.
   */
-class WebSearchCandidateGenerator
-      extends CandidateGeneration with QueryGeneration {
-
-  /**
-    * Generates web search queries for the given question.
-    * @param question A [[Question]] instance to generate search queries for.
-    * @return A [[Seq]] of search queries that can be issued to a search engine.
-    */
-  override def getSearchQueries(question: Question) = {
-    Seq(question.title)
-  }
+class WebSearchCandidateGenerator(queryGenerator: QueryGeneration)
+      extends CandidateGeneration {
 
   /**
     * Generates candidates from a single web document.
@@ -57,7 +48,7 @@ class WebSearchCandidateGenerator
     */
   override def getCandidateAnswers(question: Question)
       : Future[Seq[AnswerCandidate]] = {
-    val queries = getSearchQueries(question)
+    val queries = queryGenerator.getSearchQueries(question)
     Future.collect(queries.map {
       query =>
         Future.collect(WebSearch(query).zipWithIndex.map(d => generateCandidates(d._1, d._2)))

@@ -14,7 +14,7 @@ object TermIdf extends LazyLogging {
 
   val termCounts = loadIdfData()
   assert(termCounts.contains(""))
-  val docCount = termCounts.get("").get
+  val docCount = termCounts.get("").get / 10
 
   private def loadIdfData(): Map[String, Long] = {
     logger.info("Reading term document count information")

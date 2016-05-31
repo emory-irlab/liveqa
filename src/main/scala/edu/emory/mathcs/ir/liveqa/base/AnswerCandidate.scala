@@ -28,7 +28,7 @@ class AnswerCandidate(val answerType: AnswerType,
       None
   }
 
-  override def toString = s"$text\n\n$source"
+  override def toString = s"$answerType\t${text.replace("\n", " ").replace("\t", " ")}\t${source.replace("\n", " ")}"
 }
 
 object AnswerCandidate {

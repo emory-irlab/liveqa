@@ -24,14 +24,22 @@ class MatchesFeatures extends FeatureCalculation {
       else curLength = 0
     }
 
-    if (questionTerms.nonEmpty) {
+    val res = if (questionTerms.nonEmpty) {
       Map(
+        "MatchedPerAnswerTerm" + suffix -> (
+          if (answerTerms.nonEmpty) answerTerms.count(questionTermsSet.contains).toFloat / answerTerms.size
+          else 0.0f),
+        "NewTermsPerAnswerTerm" + suffix -> (
+          if (answerTerms.nonEmpty) answerTerms.count(!questionTermsSet.contains(_)).toFloat / answerTerms.size
+          else 0.0f),
+        "NumberMatches" + suffix -> answerTerms.count(questionTermsSet.contains).toFloat / questionLength,
         "MatchedTerms%" + suffix -> questionTermsSet.intersect(answerTerms.toSet).size.toFloat / questionLength,
-        "LongestMatchSpan" + suffix -> longestSpan
+        "LongestMatchSpan" + suffix -> longestSpan.toFloat
       )
     } else {
       Map[String, Float]()
     }
+    res
   }
 
   /**

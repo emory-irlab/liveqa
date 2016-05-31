@@ -50,6 +50,9 @@ object WikiHowQuestion extends LazyLogging {
             Array(url, exc.toString)))
           // Return empty future.
           Future.value(None)
+        case exc: Exception =>
+          logger.error(exc.toString)
+          Future.value(None)
       }
 
     qna

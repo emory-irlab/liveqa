@@ -23,14 +23,14 @@ class AnswerStatsFeatures extends FeatureCalculation {
         "AnswerLengthChars" -> answer.text.length,
         "AnswerLengthSentences" -> sentences,
         "AnswerLengthWords" -> words,
-        "AnswerLengthWordsPerSentence" -> (if (sentences > 0) words / sentences else 0.0f),
-        "NonAlphaChars" -> answer.text.count(!_.isLetterOrDigit) / answer.text.length,
-        "QuestionMarksCount" -> answer.text.count(_ == '?'),
+        "AnswerLengthWordsPerSentence" -> (if (sentences > 0) words.toFloat / sentences else 0.0f),
+        "NonAlphaChars" -> answer.text.count(!_.isLetterOrDigit).toFloat / answer.text.length,
+        "QuestionMarksCount" -> answer.text.count(_ == '?').toFloat,
         "VerbsPerWord" -> (
           if (words == 0) 0
           else answer.textNlp.sentences().asScala
-            .flatMap(s => s.posTags().asScala).count(_.startsWith("V")) / words
-          )
+            .flatMap(s => s.posTags().asScala).count(_.startsWith("V")).toFloat / words
+        )
       )
     }
   }

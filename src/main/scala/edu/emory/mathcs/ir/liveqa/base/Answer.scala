@@ -27,14 +27,13 @@ case class Answer(id:Int, qid: String, answer: String, sources: Array[String]) {
     *         response from TREC LiveQA organizers.
     */
   def toXml =
-    answer
     <xml>
       <answer pid={Answer.systemName} answered="yes" time={time.toString} qid={qid}>
         <content>{answer}</content>
         <resources>{sources}</resources>
-        <title-foci></title-foci>
-        <body-foci></body-foci>
-        <summary></summary>
+        <title-foci> </title-foci>
+        <body-foci> </body-foci>
+        <summary> </summary>
       </answer>
     </xml>
 

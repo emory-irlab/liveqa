@@ -23,12 +23,12 @@ class TermOverlapFeatures extends FeatureCalculation {
     getOverlapFeatures(question.bodyNlp, answer.textNlp, "BodyAnswer")
 
     if (answer.attributes.contains(QuestionTitle)) {
-      feats ++= getOverlapFeatures(question.titleNlp, answer.getAttributeNlp(QuestionTitle).get, "TitleQTAnswer")
-      feats ++= getOverlapFeatures(question.bodyNlp, answer.getAttributeNlp(QuestionTitle).get, "BodyQTAnswer")
+      feats ++= getOverlapFeatures(question.titleNlp, answer.getAttributeNlp(QuestionTitle).get, "Title-QTAnswer")
+      feats ++= getOverlapFeatures(question.bodyNlp, answer.getAttributeNlp(QuestionTitle).get, "Body-QTAnswer")
     }
     if (answer.attributes.contains(QuestionBody)) {
-      feats ++= getOverlapFeatures(question.titleNlp, answer.getAttributeNlp(QuestionBody).get, "TitleQTBody")
-      feats ++= getOverlapFeatures(question.bodyNlp, answer.getAttributeNlp(QuestionBody).get, "BodyQTBody")
+      feats ++= getOverlapFeatures(question.titleNlp, answer.getAttributeNlp(QuestionBody).get, "Title-QTBody")
+      feats ++= getOverlapFeatures(question.bodyNlp, answer.getAttributeNlp(QuestionBody).get, "Body-QTBody")
     }
 
     feats

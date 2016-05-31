@@ -3,28 +3,19 @@ package edu.emory.mathcs.ir.liveqa.verticals.wikihow
 import com.twitter.util.Future
 import com.typesafe.config.ConfigFactory
 import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.WIKIHOW
-import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, CandidateGeneration, Question}
+import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, CandidateGeneration, QueryGeneration, Question}
 
 /**
   * Created by dsavenk on 5/28/16.
   */
-class WikiHowCandidateGenerator extends CandidateGeneration {
+class WikiHowCandidateGenerator(queryGenerator: QueryGeneration) extends CandidateGeneration {
 
   private val cfg = ConfigFactory.load()
-
-  /**
-    * Generates search queries for the given question.
-    * @param question A question to generate search queries for.
-    * @return A sequence of search queries to issue to a search engine.
-    */
-  def getSearchQueries(question: Question) = {
-    Seq(question.title.replaceAll("[^A-Za-z0-9]", " "))
-  }
 
   override def getCandidateAnswers(question: Question)
   : Future[Seq[AnswerCandidate]] = {
     val results = Future collect {
-      getSearchQueries(question) map {
+      queryGenerator.getSearchQueries(question) map {
         Search(_, cfg.getInt("qa.wikihow_results"))
       } map {
         futureResults => futureResults.map(

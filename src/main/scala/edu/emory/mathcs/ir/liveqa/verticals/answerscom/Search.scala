@@ -79,11 +79,17 @@ object Search extends LazyLogging {
     */
   private def parse(searchHtml: String) : Array[String] = {
     val browser = JsoupBrowser()
-    val document = browser.parseString(searchHtml)
-    val articles = document >> elementList("article.frame")
-    articles
-      .map(answer => answer >> attr("href")("h1 a"))
-      .filter(!_.contains("/article/"))
-      .toArray
+    try {
+      val document = browser.parseString(searchHtml)
+      val articles = document >> elementList("article.frame")
+      articles
+        .map(answer => answer >> attr("href")("h1 a"))
+        .filter(!_.contains("/article/"))
+        .toArray
+    } catch {
+      case exc: Exception =>
+        logger.error(exc.toString)
+        Array.empty[String]
+    }
   }
 }
