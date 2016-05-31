@@ -84,7 +84,7 @@ object Search extends LazyLogging {
       val articles = document >> elementList("article.frame")
       articles
         .map(answer => answer >> attr("href")("h1 a"))
-        .filter(!_.contains("/article/"))
+        .filter(!_.contains("/article/")).toSet
         .toArray
     } catch {
       case exc: Exception =>
