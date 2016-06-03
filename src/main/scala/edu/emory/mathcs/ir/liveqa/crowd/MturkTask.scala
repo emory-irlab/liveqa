@@ -1,6 +1,6 @@
 package edu.emory.mathcs.ir.liveqa.crowd
 
-import com.amazonaws.mturk.requester.QualificationRequirement
+import com.amazonaws.mturk.requester.{QualificationRequirement, RequesterStatistic, TimePeriod}
 import com.amazonaws.mturk.service.axis.RequesterService
 import com.amazonaws.mturk.util.PropertiesClientConfig
 import com.typesafe.config.ConfigFactory
@@ -22,7 +22,6 @@ object MturkTask {
     </ExternalQuestion>
 
   def main(args: Array[String]): Unit = {
-
     val responseGroup: Array[String] = null
     val qualifications: Array[QualificationRequirement] = null
     val requesterAnnotation:String = null
