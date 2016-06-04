@@ -13,7 +13,8 @@ from sklearn.linear_model import SGDRegressor
 from sklearn.pipeline import Pipeline, FeatureUnion
 
 
-BASE_PATH = "/home/dsavenk/data/liveqa/liveqa_16/run_logs/"
+# BASE_PATH = "/home/dsavenk/data/liveqa/liveqa_16/run_logs/"
+BASE_PATH = "/home/dsavenk/Projects/octiron/data/liveqa/liveqa_16/run_logs/"
 
 def read_ratings(rating_file):
     question_ratings = dict()
@@ -133,45 +134,72 @@ def test_model(model, test_ratings):
     scores = []
     heuristic_scores = []
     yahoo_scores = []
-    yahoo_scores_prec = []
+    crowdrating_only_scores = []
+    crowdrating_only_heuristic_scores = []
     for qid, answers in test_ratings.iteritems():
         ya_answers = [ratings for aid, ratings in answers.iteritems() if aid == -1]
         yahoo_scores.append((1.0 * sum([r[1] for r in ya_answers[0]]) / len(ya_answers[0])) if ya_answers else 0.0)
-        if ya_answers:
-            yahoo_scores_prec.append(1.0 * sum([r[1] for r in ya_answers[0]]) / len(ya_answers[0]))
+
+        # Update answers to include only system answers.
         answers = dict([(aid, ratings) for aid, ratings in answers.iteritems() if aid != -1])
-        features, labels = generate_features(qid, answers)
-        predictions = model.predict(features)
-        original = [ans for ans in sorted(enumerate(answers), key=lambda a:features[a[0]][0]) if features[ans[0]][0] != -1]
-        heuristic = sorted(enumerate(answers), key=lambda a: features[a[0]][1], reverse=True)
-        reranking = sorted(enumerate(answers), key=lambda a: predictions[a[0]], reverse=True)
-        scores.append(labels[reranking[0][0]])
-        original_scores.append(labels[original[0][0]] if original else 0.0)
 
-        if features[heuristic[0][0]][1] >= 2.5:
-            heuristic_scores.append(labels[heuristic[0][0]])
+        if not answers:
+            scores.append(0.0)
+            original_scores.append(0.0)
+            heuristic_scores.append(0.0)
+            crowdrating_only_scores.append(0.0)
         else:
-            worker_answer = -1
-            worker_answer_length = 0
-            for a in heuristic:
-                if features[a[0]][12] == 1 and worker_answer_length < features[a[0]][7]:
-                    worker_answer = a[0]
-                    worker_answer_length = features[a[0]][7]
-            if worker_answer != -1:
-                heuristic_scores.append(labels[worker_answer])
-            else:
-                heuristic_scores.append(labels[heuristic[0][0]])
+            features, labels = generate_features(qid, answers)
+            predictions = model.predict(features)
+            original = [ans for ans in sorted(enumerate(answers), key=lambda a:features[a[0]][0]) if features[ans[0]][0] != -1]
+            heuristic = sorted(enumerate(answers), key=lambda a: features[a[0]][1], reverse=True)
+            crowdrating_only = [ans for ans in sorted(enumerate(answers), key=lambda a:predictions[a[0]], reverse=True) if features[ans[0]][0] != -1]
+            crowdrating_only_heuristic = [ans for ans in sorted(enumerate(answers), key=lambda a: features[a[0]][1], reverse=True) if features[ans[0]][0] != -1]
+            reranking = sorted(enumerate(answers), key=lambda a: predictions[a[0]], reverse=True)
+            scores.append(labels[reranking[0][0]])
+            original_scores.append(labels[original[0][0]] if original else 0.0)
+            crowdrating_only_scores.append(labels[crowdrating_only[0][0]] if crowdrating_only else 0.0)
+            crowdrating_only_heuristic_scores.append(labels[crowdrating_only_heuristic[0][0]] if crowdrating_only_heuristic else 0.0)
 
+            if features[heuristic[0][0]][1] >= 2.5:
+                heuristic_scores.append(labels[heuristic[0][0]])
+            else:
+                worker_answer = -1
+                worker_answer_length = 0
+                for a in heuristic:
+                    if features[a[0]][12] == 1 and worker_answer_length < features[a[0]][7]:
+                        worker_answer = a[0]
+                        worker_answer_length = features[a[0]][7]
+                if worker_answer != -1:
+                    heuristic_scores.append(labels[worker_answer])
+                else:
+                    heuristic_scores.append(labels[heuristic[0][0]])
+
+    print "------------------ ACCURACY -----------------"
     print "Original ranking = ", 1.0 * sum(original_scores) / len(original_scores)
     print "My heuristic = ", 1.0 * sum(heuristic_scores) / len(heuristic_scores), stats.ttest_rel(original_scores, heuristic_scores)[1]
     print "Reranking model = ", 1.0 * sum(scores) / len(scores), stats.ttest_rel(original_scores, scores)[1]
+    print "Reranking model (ratings only) = ", 1.0 * sum(crowdrating_only_scores) / len(crowdrating_only_scores), stats.ttest_rel(original_scores, crowdrating_only_scores)[1]
+    print "Crowd ratings only = ", 1.0 * sum(crowdrating_only_heuristic_scores) / len(crowdrating_only_heuristic_scores), stats.ttest_rel(original_scores, crowdrating_only_heuristic_scores)[1]
     print "Yahoo! Answers = ", 1.0 * sum(yahoo_scores) / len(yahoo_scores), stats.ttest_rel(original_scores, yahoo_scores)[1]
-    print "Yahoo! Answers (prec) = ", 1.0 * sum(yahoo_scores_prec) / len(yahoo_scores_prec), stats.ttest_ind(original_scores, yahoo_scores_prec)[1]
+    print "------------------ PRECISION -----------------"
+    print "Original ranking = ", div_by_nonzero(sum(original_scores), original_scores)
+    print "My heuristic = ", div_by_nonzero(sum(heuristic_scores), heuristic_scores)
+    print "Reranking model = ", div_by_nonzero(sum(scores), scores)
+    print "Reranking model (ratings only) = ", div_by_nonzero(sum(crowdrating_only_scores), crowdrating_only_scores)
+    print "Crowd ratings only = ", div_by_nonzero(sum(crowdrating_only_heuristic_scores), crowdrating_only_heuristic_scores)
+    print "Yahoo! Answers = ", div_by_nonzero(sum(yahoo_scores), yahoo_scores)
+
+
+def div_by_nonzero(nom, list):
+    denom = len([x for x in list if x != 0])
+    return 1.0 * nom / denom if denom != 0 else 0.0
+
 
 if __name__ == "__main__":
     random.seed(42)
     ratings = read_ratings(argv[1])
-    train_ratings, test_ratings = split_train_test(ratings)
+    train_ratings, test_ratings = split_train_test(ratings, train_fraction=0.5)
     train_features, train_labels = create_dataset(train_ratings)
     model = train_model(train_features, train_labels)
     test_model(model, test_ratings)
