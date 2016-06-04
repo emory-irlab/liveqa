@@ -96,6 +96,10 @@ def generate_features(qid, answers):
         worker_ratings = [r[1] for r in get_answer_ratings(aid)]
 
         labels.append(1.0 * sum([rating[1] for rating in ratings]) / len(ratings))
+
+        # Uncomment this to train a model without crowd ratings.
+        # worker_ratings = []
+
         features.append([
             answers_data[aid][1],  # rank
             1.0 * sum(worker_ratings) / len(worker_ratings) if worker_ratings else 0.0,  # avg worker rating
@@ -148,6 +152,7 @@ def test_model(model, test_ratings):
             original_scores.append(0.0)
             heuristic_scores.append(0.0)
             crowdrating_only_scores.append(0.0)
+            crowdrating_only_heuristic_scores.append(0.0)
         else:
             features, labels = generate_features(qid, answers)
             predictions = model.predict(features)
@@ -192,7 +197,7 @@ def test_model(model, test_ratings):
 
 
 def div_by_nonzero(nom, list):
-    denom = len([x for x in list if x != 0])
+    denom = len([x for x in list if x > 0.5])
     return 1.0 * nom / denom if denom != 0 else 0.0
 
 
