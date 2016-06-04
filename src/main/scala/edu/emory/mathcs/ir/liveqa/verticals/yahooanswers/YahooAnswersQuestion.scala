@@ -88,7 +88,7 @@ object YahooAnswersQuestion extends LazyLogging {
     * @param pageHtml Html code of the question page.
     * @return [[YahooAnswersQuestion]] instance for the given question.
     */
-  private def parse(pageHtml: String): YahooAnswersQuestion = {
+  def parse(pageHtml: String): YahooAnswersQuestion = {
     val browser = JsoupBrowser()
     val document = browser.parseString(pageHtml)
     val qid = document >> attr("data-ya-question-id")("#ya-question-detail")
