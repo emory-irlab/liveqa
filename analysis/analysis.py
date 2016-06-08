@@ -218,8 +218,20 @@ def rank_diff(rank1, rank2):
     return sign(rank2 - rank1)
 
 
+def analysis():
+    sum =
+    for db in DB_PATH:
+        conn = sqlite3.connect(db)
+        c = conn.cursor()
+        res = c.execute("SELECT COUNT(*) FROM answers WHERE WORKERID != ''").fetchall()
+        conn.close()
+        if res:
+            print(res[0][0])
+    return -1
+
 if __name__ == "__main__":
-    analyze_ratings()
+    # analyze_ratings()
     # read_qna()
+    analysis()
 
 
