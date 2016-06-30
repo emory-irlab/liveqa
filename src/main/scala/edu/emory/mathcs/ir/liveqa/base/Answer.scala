@@ -11,8 +11,21 @@ import io.finch.EncodeResponse
   * to generate the answer and some additional information expected by the TREC
   * LiveQA organizers.
   */
-case class Answer(id:Int, qid: String, answer: String, sources: Array[String]) {
+case class Answer(id:Int,
+                  qid: String,
+                  answer: String,
+                  sources: Array[String],
+                  confidence: Double = 0.0) {
   var time: Long = 0
+
+  /**
+    * Alternative constructor, that doesn't take id as a parameter.
+    *
+    * @param answer The answer to the question.
+    * @param sources The sources used to generate the answer.
+    * @param confidence Confidence score for the candidate.
+    */
+  def this(qid: String, answer:String, sources: Array[String], confidence: Double) = this(0, qid, answer, sources, confidence)
 
   /**
     * Alternative constructor, that doesn't take id as a parameter.
@@ -41,6 +54,7 @@ case class Answer(id:Int, qid: String, answer: String, sources: Array[String]) {
           <content>
             {answer}
           </content>
+          <confidence>{confidence}</confidence>
           <resources>
             {sources}
           </resources>

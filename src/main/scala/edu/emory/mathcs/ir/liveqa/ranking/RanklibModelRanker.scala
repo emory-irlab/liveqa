@@ -1,7 +1,7 @@
 package edu.emory.mathcs.ir.liveqa.ranking
 
-import ciir.umass.edu.learning.{Ranker, RankerFactory}
-import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.CandidateAttribute
+import ciir.umass.edu.learning.{DataPoint, Ranker, RankerFactory}
+import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.{CandidateAttribute, CandidateScore}
 import edu.emory.mathcs.ir.liveqa.base.{AnswerCandidate, Question}
 import edu.emory.mathcs.ir.liveqa.ranking.ranklib.Converter
 import edu.emory.mathcs.ir.liveqa.scoring.features.FeatureCalculation
@@ -29,14 +29,18 @@ class RanklibModelRanker(ranker: Ranker,
       candidates.foreach(c => featureGenerator.computeFeatures(question, c).map(e => c.features += e))
 
       val ranklist = Converter.createRankList(question, candidates, alphabet)
-      val res = ranker.rank(ranklist)
-      val origPosToRank = (0 until res.size()).map(i => res.get(i).getDescription.toInt -> i).toMap
+      val candidateWithScores = (0 until ranklist.size)
+        .map(ranklist.get)
+        .map(ranker.eval)
+        .zip(candidates).sortBy {
+        case (score, candidate) => -score
+      }
 
-      val finalRanking = candidates.zipWithIndex.sortBy {
-        case (a, i) => origPosToRank.get(i)
-      }.map(_._1)
-
-      finalRanking
+      candidateWithScores.map {
+        case (score, candidate) =>
+          candidate.attributes(CandidateScore) = score.toString
+          candidate
+      }
     }
   }
 }

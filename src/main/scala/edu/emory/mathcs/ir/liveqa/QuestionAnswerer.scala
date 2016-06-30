@@ -6,6 +6,7 @@ import edu.emory.mathcs.ir.liveqa.base._
 import com.twitter.util.{Await, Duration}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import edu.emory.mathcs.ir.liveqa.base.AnswerCandidate.CandidateScore
 import edu.emory.mathcs.ir.liveqa.ranking.AnswerRanking
 
 /**
@@ -117,6 +118,7 @@ class TextQuestionAnswerer(candidateGenerator: CandidateGeneration,
       }
 
       if (rankedCandidates.isEmpty) new Answer(question.qid, "", Array(""))
-      else new Answer(question.qid, rankedCandidates.head.text, Array(rankedCandidates.head.source))
+      else new Answer(question.qid, rankedCandidates.head.text, Array(rankedCandidates.head.source),
+        rankedCandidates.head.attributes.getOrElse(CandidateScore, "0.0").toDouble)
   }
 }

@@ -53,4 +53,5 @@ object AnswerCandidate {
   case object Relevance extends CandidateAttribute
   // Rank of the candidate according to some ranking function.
   case object CandidateRank extends CandidateAttribute
+  case object CandidateScore extends CandidateAttribute
 }

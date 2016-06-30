@@ -55,10 +55,10 @@ object Search extends LazyLogging {
   private def getSearchPage(query: String, page: Int):
       Future[Seq[Option[YahooAnswersQuestion]]] = {
     val searchUrl = http.Request.queryString(yahooAnswerSearchUrl,
-      Map("p" -> URLEncoder.encode(query, "UTF-8"), "s" -> page.toString))
+      Map("p" -> query, "s" -> page.toString))
 
     // For some reason Yahoo! Answers doesn't find anything if plus is used
-    val answers = HtmlScraper(searchUrl.replace("%2B", "%20"))
+    val answers = HtmlScraper(searchUrl)
       .within(Duration(cfg.getInt("request.timeout"), TimeUnit.SECONDS))
       .flatMap {
         content =>
@@ -93,7 +93,7 @@ object Search extends LazyLogging {
       //document >> element("#yan-questions") >> elementList("li")
       (document >> attrs("href")(".searchCenterMiddle li a"))
         .filter(_.contains("qid="))
-        .map(href => href.split("qid=")(1)).toSet
+        .map(href => href.split("qid=")(1).split("&")(0)).toSet
         .toArray
     } catch {
       case exc: Exception =>
