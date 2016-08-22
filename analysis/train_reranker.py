@@ -13,16 +13,21 @@ from sklearn.ensemble import GradientBoostingRegressor
 
 
 # BASE_PATH = "/home/dsavenk/data/liveqa/liveqa_16/run_logs/"
-BASE_PATH = "/home/dsavenk/Projects/octiron/data/liveqa/liveqa_16/run_logs/"
+BASE_PATH = "/home/dsavenk/Mounts/octiron/data/liveqa/liveqa_16/run_logs/"
 
 THRESHOLD = -1
 
 def read_ratings(rating_file):
     question_ratings = dict()
+    questions_by_qid = dict()
+    categories = set()
     with open(rating_file, 'r') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             qid = row['Input.qid']
+            category = row['Input.category'].split(" >> ")[0]
+            questions_by_qid[qid] = (row['Input.title'] + " " + row['Input.body'], category)
+            categories.add(category)
             if qid not in question_ratings:
                 question_ratings[qid] = dict()
             for i in range(1, 10):
@@ -33,10 +38,12 @@ def read_ratings(rating_file):
                 source = row['Input.answer_' + str(i) + '_source']
                 rating = int(row['Answer.rating_' + str(i)])
                 useful = row['Answer.useful_' + str(i)]
+                text = row['Input.answer_' + str(i)]
                 if id not in question_ratings[qid]:
                     question_ratings[qid][id] = []
-                question_ratings[qid][id].append((source, rating, useful))
-    return question_ratings
+                question_ratings[qid][id].append((source, rating, useful, text))
+    print categories
+    return question_ratings, questions_by_qid
 
 
 def split_train_test(ratings, train_fraction=0.3):
@@ -178,15 +185,21 @@ def train_model(features, labels):
     return regressor.fit(features, labels)
 
 
-def test_model(model, test_ratings, include_crowd_answers=True, include_weights=True):
+def test_model(model, test_ratings, include_crowd_answers=True, include_weights=True, qid2title=None, category=None):
     original_scores = []
     scores = []
     heuristic_scores = []
     rating_scores = []
     yahoo_scores = []
-    number_of_questions = len(test_ratings.keys())
+    number_of_questions = 0
+
+    questions_score_diff = []
 
     for qid, answers in test_ratings.iteritems():
+        if category is not None and qid2title is not None and qid2title[qid][1] != category:
+            continue
+
+        number_of_questions += 1
         answers = answers.items()
         ya_answers = [ratings for aid, ratings in answers if aid == -1]
         yahoo_scores.append((1.0 * sum([r[1] for r in ya_answers[0]]) / len(ya_answers[0])) if ya_answers else 0.0)
@@ -222,17 +235,32 @@ def test_model(model, test_ratings, include_crowd_answers=True, include_weights=
                     heuristic_scores.append(labels[worker_answer])
                 else:
                     heuristic_scores.append(labels[heuristic[0][0]])
+        questions_score_diff.append((original_scores[-1], scores[-1], (qid2title[qid] if qid2title is not None else qid, original[0][1][1][0][3] if original else "",
+            features[original[0][0]] if original else [], reranking[0][1][1][0][3] if reranking else "", features[reranking[0][0]] if reranking else [])))
 
-    # sns.set_context("notebook", font_scale=2, rc={"lines.linewidth": 2.5})
-    # sns.set_style("white")
-    # sns.set_style("ticks")
-    # sns.distplot(original_scores, hist_kws={"alpha": 0.3}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], label="Original ranking")
-    # sns.distplot(scores, hist_kws={"alpha": 0.3}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], label="CRQA")
-    # hist = sns.distplot(yahoo_scores, hist_kws={"alpha": 0.5}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], label="Yahoo! Answers")
-    # hist.set(xlim=(0, 4))
-    # sns.plt.legend(loc='upper left')
-    # sns.plt.xlabel("Answer score")
-    # sns.plt.show()
+    sns.set_context("notebook", font_scale=2, rc={"lines.linewidth": 2.5})
+    sns.set_style("white")
+    sns.set_style("ticks")
+    #sns.set_palette("bright")
+    sns.distplot(original_scores, hist_kws={"alpha": 0.3, "hatch": "//", "label": "Original ranking"}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], kde_kws={"label": "Original ranking", "linestyle": "-.", "lw": 5})
+    sns.distplot(scores, hist_kws={"alpha": 0.3, "hatch":"o", "label": "CRQA"}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], kde_kws={"label": "CRQA", "linestyle": "solid", "lw": 5})
+    hist = sns.distplot(yahoo_scores, hist_kws={"alpha": 0.3,  "hatch":"\\", "label": "Yahoo! Answers"}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], kde_kws={"label": "Yahoo! Answers", "linestyle": "dashed", "lw": 5})
+    hist.set(xlim=(0, 4))
+    sns.plt.legend(loc='upper left')
+    sns.plt.xlabel("Answer score")
+    sns.plt.show()
+
+    import operator
+    questions_score_diff.sort(key=lambda x: x[0] - x[1])
+
+    # for o, s, question in questions_score_diff:
+    #     print "-------------------"
+    #     title, original, ofeats, reranking, refeats = question
+    #     print title
+    #     print "\t\t", o, "\t", original.replace("\n", " ")
+    #     print "\t\t\t", ofeats
+    #     print "\t\t", s, "\t", reranking.replace("\n", " ")
+    #     print "\t\t\t", refeats
 
     accuracy = {
         "Original ranking = ": get_accuracy(original_scores, number_of_questions),     # stats.ttest_rel(original_scores, scores)[1]
@@ -305,19 +333,19 @@ def test_model(model, test_ratings, include_crowd_answers=True, include_weights=
     # print "My heuristic = ", prec2["My heuristic = "], prec3["My heuristic = "], prec4["My heuristic = "]
     # print "Reranking model = ", prec2["Reranking model = "], prec3["Reranking model = "], prec4["Reranking model = "]
     # print "Yahoo! Answers = ", prec2["Yahoo! Answers = "], prec3["Yahoo! Answers = "], prec4["Yahoo! Answers = "]
-    return accuracy, precision, suc2, suc3, suc4, prec2, prec3, prec4
+    return accuracy, precision, suc2, suc3, suc4, prec2, prec3, prec4, number_of_questions
 
 
 def get_prec_k(scores, k):
-    return sum([1.0 for score in scores if score >= k]) / len([score for score in scores if score > 0.5])
+    return sum([1.0 for score in scores if score >= k]) / len([score for score in scores if score > 0.5]) if scores else 0.0
 
 
 def get_suc_k(scores, k, number_of_questions):
-    return sum([1.0 for score in scores if score >= k]) / number_of_questions
+    return sum([1.0 for score in scores if score >= k]) / number_of_questions  if scores else 0.0
 
 
 def get_accuracy(scores, number_of_questions):
-    return sum([score for score in scores if score > 0]) / number_of_questions
+    return sum([score for score in scores if score > 0]) / number_of_questions  if scores else 0.0
 
 
 def get_precision(nom, list):
@@ -329,7 +357,8 @@ if __name__ == "__main__":
     random.seed(42)
     include_crowd_answers = True
     include_weights = True
-    ratings = read_ratings(argv[1])
+    ratings, qid2title = read_ratings(argv[1])
+
     accuracies = dict()
     precisions = dict()
     succ2 = dict()
@@ -341,85 +370,99 @@ if __name__ == "__main__":
 
     sns.set(style="ticks")
 
-    thresholds = []
-    typ = []
-    scores = []
+    # thresholds = []
+    # typ = []
+    # scores = []
 
 
-    for th in range(-1, 10):
-        _ratings_cache = None
-        _answers_cache = None
-        THRESHOLD = th
-        for i in xrange(50):
-            train_ratings, test_ratings = split_train_test(ratings, train_fraction=0.5)
+    # for th in range(-1, 10):
+    #     _ratings_cache = None
+    #     _answers_cache = None
+    #     THRESHOLD = th
+    #     for i in xrange(50):
+    #         train_ratings, test_ratings = split_train_test(ratings, train_fraction=0.5)
 
-            for t in ["answers + ratings", "ratings only", "answers only"]:
-                if t == "answers + ratings":
-                    include_weights = True
-                    include_crowd_answers = True
-                elif t == "ratings only":
-                    include_weights = True
-                    include_crowd_answers = False
-                else:
-                    include_crowd_answers = True
-                    include_weights = False
+    #         for t in ["answers + ratings", "ratings only", "answers only"]:
+    #             if t == "answers + ratings":
+    #                 include_weights = True
+    #                 include_crowd_answers = True
+    #             elif t == "ratings only":
+    #                 include_weights = True
+    #                 include_crowd_answers = False
+    #             else:
+    #                 include_crowd_answers = True
+    #                 include_weights = False
 
-                train_features, train_labels = create_dataset(train_ratings, include_crowd_answers, include_weights)
-                model = train_model(train_features, train_labels)
-                accuracy, precision, _, _, _, _, _, _ = test_model(model, test_ratings, include_crowd_answers, include_weights)
-                for k in accuracy.iterkeys():
-                    if k not in accuracies:
-                        accuracies[k] = []
-                        precisions[k] = []
-                    accuracies[k].append(accuracy[k])
-                    precisions[k].append(precision[k])
-                thresholds.append(10 - THRESHOLD - 1)
-                typ.append(t)
+    #             train_features, train_labels = create_dataset(train_ratings, include_crowd_answers, include_weights)
+    #             model = train_model(train_features, train_labels)
+    #             accuracy, precision, _, _, _, _, _, _ = test_model(model, test_ratings, include_crowd_answers, include_weights)
+    #             for k in accuracy.iterkeys():
+    #                 if k not in accuracies:
+    #                     accuracies[k] = []
+    #                     precisions[k] = []
+    #                 accuracies[k].append(accuracy[k])
+    #                 precisions[k].append(precision[k])
+    #             thresholds.append(10 - THRESHOLD - 1)
+    #             typ.append(t)
 
-    data = pd.DataFrame({"Number of workers": thresholds,
-                         "avg-score": accuracies["Reranking model = "],
-                         "model": typ})
+    # data = pd.DataFrame({"Number of workers": thresholds,
+    #                      "avg-score": accuracies["Reranking model = "],
+    #                      "model": typ})
 
-    sns.set(font_scale=2)
-    g = sns.factorplot(x="Number of workers", y="avg-score", hue="model", data=data, legend=False)
-    g.set(ylim=(2.3, 2.6))
-    sns.plt.legend(loc='upper left')
-    sns.plt.show()
+    # sns.set(font_scale=2)
+    # g = sns.factorplot(x="Number of workers", y="avg-score", hue="model", data=data, legend=False)
+    # g.set(ylim=(2.3, 2.6))
+    # sns.plt.legend(loc='upper left')
+    # sns.plt.show()
 
-    data = pd.DataFrame({"Number of workers": thresholds,
-                         "avg-prec": precisions["Reranking model = "],
-                         "model": typ})
+    # data = pd.DataFrame({"Number of workers": thresholds,
+    #                      "avg-prec": precisions["Reranking model = "],
+    #                      "model": typ})
 
-    sns.set(font_scale=2)
-    g = sns.factorplot(x="Number of workers", y="avg-prec", hue="model", data=data, legend=False)
-    g.set(ylim=(2.3, 2.6))
-    sns.plt.legend(loc='upper left')
-    sns.plt.show()
+    # sns.set(font_scale=2)
+    # g = sns.factorplot(x="Number of workers", y="avg-prec", hue="model", data=data, legend=False)
+    # g.set(ylim=(2.3, 2.6))
+    # sns.plt.legend(loc='upper left')
+    # sns.plt.show()
 
-    # for i in xrange(1):
-    #     train_ratings, test_ratings = split_train_test(ratings, train_fraction=0.5)
-    #     train_features, train_labels = create_dataset(train_ratings, include_crowd_answers)
-    #     model = train_model(train_features, train_labels)
-    #     accuracy, precision, s2, s3, s4, p2, p3, p4 = test_model(model, test_ratings, include_crowd_answers)
-    #     for k in accuracy.iterkeys():
-    #         if k not in accuracies:
-    #             accuracies[k] = []
-    #             precisions[k] = []
-    #             succ2[k] = []
-    #             succ3[k] = []
-    #             succ4[k] = []
-    #             prec2[k] = []
-    #             prec3[k] = []
-    #             prec4[k] = []
-    #         accuracies[k].append(accuracy[k])
-    #         precisions[k].append(precision[k])
-    #         succ2[k].append(s2[k])
-    #         succ3[k].append(s3[k])
-    #         succ4[k].append(s4[k])
-    #         prec2[k].append(p2[k])
-    #         prec3[k].append(p3[k])
-    #         prec4[k].append(p4[k])
-    #
-    # for k in accuracies.iterkeys():
-    #     print k
-    #     print "Accuracy=", np.mean(accuracies[k]), "Precision=", np.mean(precisions[k]), "succ@2=", np.mean(succ2[k]), "succ@3=", np.mean(succ3[k]), "succ@4=", np.mean(succ4[k]), "prec@2=", np.mean(prec2[k]), "prec@3=", np.mean(prec3[k]), "prec@4=", np.mean(prec4[k])
+    for i in xrange(1):
+        train_ratings, test_ratings = split_train_test(ratings, train_fraction=0.5)
+        train_features, train_labels = create_dataset(train_ratings, include_crowd_answers)
+        model = train_model(train_features, train_labels)
+        for category in [None, 'Dining Out', 'Politics & Government', 'News & Events', 'Home & Garden', 'Entertainment & Music', 'Education & Reference', 'Travel', 'Games & Recreation', 'Arts & Humanities', 'Pregnancy & Parenting', 'Sports', 'Family & Relationships', 'Society & Culture', 'Health', 'Pets', 'Beauty & Style', 'Business & Finance', 'Local Businesses', 'Computers & Internet', 'Cars & Transportation', 'Science & Mathematics']:
+
+            accuracies = dict()
+            precisions = dict()
+            succ2 = dict()
+            succ3 = dict()
+            succ4 = dict()
+            prec2 = dict()
+            prec3 = dict()
+            prec4 = dict()
+
+            accuracy, precision, s2, s3, s4, p2, p3, p4, number_of_questions = test_model(model, test_ratings, include_crowd_answers, qid2title=qid2title, category=category)
+            for k in accuracy.iterkeys():
+                if k not in accuracies:
+                    accuracies[k] = []
+                    precisions[k] = []
+                    succ2[k] = []
+                    succ3[k] = []
+                    succ4[k] = []
+                    prec2[k] = []
+                    prec3[k] = []
+                    prec4[k] = []
+                accuracies[k].append(accuracy[k])
+                precisions[k].append(precision[k])
+                succ2[k].append(s2[k])
+                succ3[k].append(s3[k])
+                succ4[k].append(s4[k])
+                prec2[k].append(p2[k])
+                prec3[k].append(p3[k])
+                prec4[k].append(p4[k])
+
+            if number_of_questions < 20: continue
+
+            print "\n", category, number_of_questions
+            for k in accuracies.iterkeys():
+                print k
+                print "Accuracy=", np.mean(accuracies[k]), "Precision=", np.mean(precisions[k]), "succ@2=", np.mean(succ2[k]), "succ@3=", np.mean(succ3[k]), "succ@4=", np.mean(succ4[k]), "prec@2=", np.mean(prec2[k]), "prec@3=", np.mean(prec3[k]), "prec@4=", np.mean(prec4[k])
