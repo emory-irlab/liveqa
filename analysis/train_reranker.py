@@ -235,23 +235,24 @@ def test_model(model, test_ratings, include_crowd_answers=True, include_weights=
                     heuristic_scores.append(labels[worker_answer])
                 else:
                     heuristic_scores.append(labels[heuristic[0][0]])
-        questions_score_diff.append((original_scores[-1], scores[-1], (qid2title[qid] if qid2title is not None else qid, original[0][1][1][0][3] if original else "",
-            features[original[0][0]] if original else [], reranking[0][1][1][0][3] if reranking else "", features[reranking[0][0]] if reranking else [])))
+        # questions_score_diff.append((original_scores[-1], scores[-1], (qid2title[qid] if qid2title is not None else qid, original[0][1][1][0][3] if original else "",
+        #     features[original[0][0]] if original else [], reranking[0][1][1][0][3] if reranking else "", features[reranking[0][0]] if reranking else [])))
 
     sns.set_context("notebook", font_scale=2, rc={"lines.linewidth": 2.5})
     sns.set_style("white")
     sns.set_style("ticks")
+
     #sns.set_palette("bright")
-    sns.distplot(original_scores, hist_kws={"alpha": 0.3, "hatch": "//", "label": "Original ranking"}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], kde_kws={"label": "Original ranking", "linestyle": "-.", "lw": 5})
-    sns.distplot(scores, hist_kws={"alpha": 0.3, "hatch":"o", "label": "CRQA"}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], kde_kws={"label": "CRQA", "linestyle": "solid", "lw": 5})
-    hist = sns.distplot(yahoo_scores, hist_kws={"alpha": 0.3,  "hatch":"\\", "label": "Yahoo! Answers"}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], kde_kws={"label": "Yahoo! Answers", "linestyle": "dashed", "lw": 5})
-    hist.set(xlim=(0, 4))
+    sns.distplot(original_scores, hist_kws={"alpha": 0.3, "align": "mid", "hatch": "//","rwidth":1,"linewidth": 2, "label": "Original ranking"}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], kde_kws={"label": "Original ranking", "linestyle": "-.", "lw": 5, "clip":(-0.5, 4.5)})
+    sns.distplot(scores, hist_kws={"alpha": 0.3, "hatch":"o","align": "mid", "label": "CRQA", "linewidth": 2, "rwidth":1}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], kde_kws={"label": "CRQA", "linestyle": "solid", "lw": 5})
+    hist = sns.distplot(yahoo_scores, hist_kws={"alpha": 0.3,  "hatch":"\\","align": "mid", "rwidth":1, "linewidth": 2, "label": "Yahoo! Answers"}, bins=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], kde_kws={"label": "Yahoo! Answers", "linestyle": "dashed", "lw": 5, "clip":(-0.5, 4.5)})
+    hist.set(xlim=(-0.5, 4.5))
     sns.plt.legend(loc='upper left')
     sns.plt.xlabel("Answer score")
     sns.plt.show()
 
     import operator
-    questions_score_diff.sort(key=lambda x: x[0] - x[1])
+    # questions_score_diff.sort(key=lambda x: x[0] - x[1])
 
     # for o, s, question in questions_score_diff:
     #     print "-------------------"
@@ -395,7 +396,7 @@ if __name__ == "__main__":
 
     #             train_features, train_labels = create_dataset(train_ratings, include_crowd_answers, include_weights)
     #             model = train_model(train_features, train_labels)
-    #             accuracy, precision, _, _, _, _, _, _ = test_model(model, test_ratings, include_crowd_answers, include_weights)
+    #             accuracy, precision, _, _, _, _, _, _, _ = test_model(model, test_ratings, include_crowd_answers, include_weights)
     #             for k in accuracy.iterkeys():
     #                 if k not in accuracies:
     #                     accuracies[k] = []
@@ -409,8 +410,8 @@ if __name__ == "__main__":
     #                      "avg-score": accuracies["Reranking model = "],
     #                      "model": typ})
 
-    # sns.set(font_scale=2)
-    # g = sns.factorplot(x="Number of workers", y="avg-score", hue="model", data=data, legend=False)
+    # sns.set(font_scale=2, style="ticks")
+    # g = sns.factorplot(x="Number of workers", y="avg-score", hue="model", data=data, legend=False, linestyles=['-', ':', '--'])
     # g.set(ylim=(2.3, 2.6))
     # sns.plt.legend(loc='upper left')
     # sns.plt.show()
@@ -419,8 +420,8 @@ if __name__ == "__main__":
     #                      "avg-prec": precisions["Reranking model = "],
     #                      "model": typ})
 
-    # sns.set(font_scale=2)
-    # g = sns.factorplot(x="Number of workers", y="avg-prec", hue="model", data=data, legend=False)
+    # sns.set(font_scale=2, style="ticks")
+    # g = sns.factorplot(x="Number of workers", y="avg-prec", hue="model", data=data, legend=False, linestyles=['-', ':', '--'])
     # g.set(ylim=(2.3, 2.6))
     # sns.plt.legend(loc='upper left')
     # sns.plt.show()
