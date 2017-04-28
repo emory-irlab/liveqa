@@ -19,7 +19,9 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "3.1.1",
   "edu.stanford.nlp" % "stanford-corenlp" % "3.6.0",
   "edu.stanford.nlp" % "stanford-corenlp" % "3.6.0" classifier "models",
-  "io.circe" %% "circe-generic" % "0.3.0",
+  "io.circe" %% "circe-core" % "0.7.0",
+  "io.circe" %% "circe-generic" % "0.7.0",
+  "io.circe" %% "circe-parser" % "0.7.0",
   "log4j" % "log4j" % "1.2.17",
   "net.databinder.dispatch" %% "dispatch-core" % "0.11.3",
   "net.ettinsmoor" %% "bingerator" % "0.2.4",
@@ -30,5 +32,6 @@ libraryDependencies ++= Seq(
   "org.apache.tika" % "tika-parsers" % "1.12",
   "org.joda" % "joda-convert" % "1.7",
   "org.scala-lang.modules" %% "scala-pickling" % "0.10.1",
+  "org.typelevel" %% "cats-core" % "0.9.0",
   "org.xerial" % "sqlite-jdbc" % "3.8.11.2"
 )

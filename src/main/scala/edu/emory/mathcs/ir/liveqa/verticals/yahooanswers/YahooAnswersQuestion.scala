@@ -63,7 +63,7 @@ object YahooAnswersQuestion extends LazyLogging {
           // Return empty future.
           Future.value(None)
         case exc: Exception =>
-          logger.error(exc.toString)
+          logger.error(requestUrl + "\t" + exc.toString)
           Future.value(None)
       }
 

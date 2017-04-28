@@ -24,12 +24,12 @@ object Question {
   implicit val ee: EncodeResponse[Question] =
     EncodeResponse.fromString("application/json") { q =>
       Json.obj(
-        "qid" -> Json.string(q.qid),
-        "category" -> Json.string(q.category),
-        "title" -> Json.string(q.title),
-        "body" -> Json.string(q.body.getOrElse("")),
-        "submittedTime" -> Json.string(q.submittedTime.toString),
-        "timeLeft" -> Json.int(math.max(0,
+        "qid" -> Json.fromString(q.qid),
+        "category" -> Json.fromString(q.category),
+        "title" -> Json.fromString(q.title),
+        "body" -> Json.fromString(q.body.getOrElse("")),
+        "submittedTime" -> Json.fromString(q.submittedTime.toString),
+        "timeLeft" -> Json.fromInt(math.max(0,
           cfg.getInt("qa.timeout") - Seconds.secondsBetween(
             q.submittedTime, DateTime.now()).getSeconds))
       ).toString

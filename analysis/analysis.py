@@ -3,7 +3,7 @@ from __future__ import print_function
 import csv, sqlite3
 from scipy import stats
 
-BASE_PATH = "/home/dsavenk/Projects/octiron/data/liveqa/liveqa_16/run_logs/"
+BASE_PATH = "/home/dsavenk/Mounts/octiron/data/liveqa/liveqa_16/run_logs/"
 CROWD_LOG_PATH = BASE_PATH + "liveqa-crowd.log"
 DB_PATH = (BASE_PATH + "crowd.db", BASE_PATH + "crowd_2.db")
 QNA_PATH = BASE_PATH + "qna_06022016_3_330pm.txt"
@@ -150,6 +150,10 @@ def analyze_ratings():
 # print(failed_count)
     print(1.0 * sum(auto_scores) / len(auto_scores))
     print(1.0 * sum(with_crowd_scores) / len(with_crowd_scores))
+
+    print(1.0 * sum(auto_scores) / 3.0 / len(res))
+    print(1.0 * sum(with_crowd_scores) / 3.0 / len(res))
+
     print(stats.ttest_ind(auto_scores, with_crowd_scores))
     print(1.0 * sum(yahoo_scores) / len(yahoo_scores))
     print(1.0 * sum(user_generated_scores) / len(user_generated_scores))
@@ -217,9 +221,7 @@ def rank_diff(rank1, rank2):
         rank2 = 10
     return sign(rank2 - rank1)
 
-
 def analysis():
-    sum =
     for db in DB_PATH:
         conn = sqlite3.connect(db)
         c = conn.cursor()
@@ -230,8 +232,8 @@ def analysis():
     return -1
 
 if __name__ == "__main__":
-    # analyze_ratings()
+    analyze_ratings()
     # read_qna()
-    analysis()
+    # analysis()
 
 
